@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* ===== desttiny 서비스 컬러 팔레트 =====
+ * 컨셉: 신비로운 우주/운명 느낌의 다크 퍼플 계열
+ * 모바일 퍼스트 (max-w-[390px] 기준)
+ */
+:root {
+  /* 배경 - 깊은 우주 다크 */
+  --destiny-bg: #0d0a1a;
+  --destiny-surface: #1a1530;
+  --destiny-surface-2: #241e42;
+
+  /* 메인 컬러 - 신비로운 퍼플 */
+  --destiny-primary: #8b5cf6;
+  --destiny-primary-hover: #7c3aed;
+  --destiny-primary-light: #c4b5fd;
+
+  /* 액센트 - 골드/별빛 */
+  --destiny-accent: #f59e0b;
+  --destiny-accent-light: #fde68a;
+
+  /* 텍스트 */
+  --destiny-text: #f0ebff;
+  --destiny-text-muted: #a89dc7;
+  --destiny-text-subtle: #6b5e8a;
+
+  /* 테두리 */
+  --destiny-border: #2d2550;
+}
+
+@theme inline {
+  --color-destiny-bg: var(--destiny-bg);
+  --color-destiny-surface: var(--destiny-surface);
+  --color-destiny-surface-2: var(--destiny-surface-2);
+  --color-destiny-primary: var(--destiny-primary);
+  --color-destiny-primary-hover: var(--destiny-primary-hover);
+  --color-destiny-primary-light: var(--destiny-primary-light);
+  --color-destiny-accent: var(--destiny-accent);
+  --color-destiny-accent-light: var(--destiny-accent-light);
+  --color-destiny-text: var(--destiny-text);
+  --color-destiny-text-muted: var(--destiny-text-muted);
+  --color-destiny-text-subtle: var(--destiny-text-subtle);
+  --color-destiny-border: var(--destiny-border);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--destiny-bg);
+  color: var(--destiny-text);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
