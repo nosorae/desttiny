@@ -1,4 +1,4 @@
-// Supabase Middleware 유틸리티
+// Supabase Proxy 유틸리티 (Next.js 16: middleware → proxy 명칭 변경)
 // 모든 요청마다 세션 토큰을 갱신하는 역할
 // Android의 OkHttp Interceptor와 유사 - 모든 요청을 가로채어 세션을 갱신
 // 이 코드가 없으면 세션이 만료되어도 자동 갱신이 안 됨
@@ -34,9 +34,11 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getUser()는 항상 서버에서 세션 검증 - 캐시되지 않음
-  // 주의: getSession()은 캐시될 수 있어 보안상 취약할 수 있음
-  await supabase.auth.getUser();
+  // getClaims()는 JWKS 캐시를 활용해 JWT를 검증 - 매 요청마다 네트워크 호출 없음
+  // getUser()는 매 요청마다 Supabase Auth 서버에 네트워크 요청을 보냄 (느림)
+  // 세션 갱신 트리거(TOKEN_REFRESHED)는 두 메서드 모두 동작하므로 getClaims() 권장
+  // 참고: @supabase/auth-js GoTrueClient.getClaims() 주석
+  await supabase.auth.getClaims();
 
   return supabaseResponse;
 }

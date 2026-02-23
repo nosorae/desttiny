@@ -3,7 +3,7 @@
 // 인증이 필요한 경로에 대한 리다이렉트 처리
 // 참고: https://supabase.com/docs/guides/auth/server-side/nextjs
 import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { updateSession } from "@/lib/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
   return await updateSession(request);

@@ -4,7 +4,7 @@
 
 ## 기술 스택 요약
 
-- **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS 4
 - **Backend**: Next.js API Routes
 - **Database**: Supabase (PostgreSQL) + `@supabase/ssr`
 - **Auth**: Supabase Auth + 카카오 OAuth
@@ -210,7 +210,7 @@ ls system-prompt-extraction/
 
 ## 참고 자료
 
-- [Next.js 15 Docs](https://nextjs.org/docs)
+- [Next.js 16 Docs](https://nextjs.org/docs)
 - [Supabase SSR Guide](https://supabase.com/docs/guides/auth/server-side/nextjs)
 - [PortOne V2 Docs](https://developers.portone.io/docs/ko/v2-payment/readme)
 - [Anthropic API Docs](https://docs.anthropic.com/en/api/getting-started)
