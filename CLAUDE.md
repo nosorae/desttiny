@@ -187,6 +187,20 @@ types/                # TypeScript 타입 정의
 - `feature-dev:feature-dev`: 새로운 기능 개발 시
 - `superpowers:test-driven-development`: 테스트 작성 시
 
+## 세션 핸드오프 규칙
+
+세션 종료 또는 컨텍스트 전환 시 핸드오프 문서를 작성하여 히스토리를 누적합니다.
+
+- **파일 경로**: `system-prompt-extraction/{프로젝트명}-{작업내용}-HANDOFF-YYYY-MM-DD.md`
+- **규칙**: 매번 새 파일 생성 (날짜 포함으로 덮어쓰지 않음 = 히스토리 누적)
+- **내용**: 다음 세션이 이 파일만 읽고 즉시 시작할 수 있는 수준으로 작성
+- **MEMORY.md 사용 안 함**: 핸드오프 파일로 컨텍스트 관리
+
+```bash
+# 핸드오프 파일 목록 확인
+ls system-prompt-extraction/
+```
+
 ## 이슈 작업 규칙
 
 1. 이슈 작업 시작 전: 해당 이슈 번호로 브랜치 생성 (`feat/issue-N-{description}`)
