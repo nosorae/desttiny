@@ -18,5 +18,5 @@ export default function ProfilePage() {
     <main className="px-6 py-8">
       <h1 className="text-xl font-bold text-destiny-text">프로필</h1>
     </main>
-  );
+  )
 }

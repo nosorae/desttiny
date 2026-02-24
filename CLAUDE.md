@@ -20,16 +20,17 @@
 
 ```typescript
 // ❌ 나쁜 주석 - 코드 그대로를 설명
-const user = await getUser(id); // 유저를 가져온다
+const user = await getUser(id) // 유저를 가져온다
 
 // ✅ 좋은 주석 - 의도와 이유를 설명
 // 결제 검증 전에 사용자 존재 여부를 먼저 확인 (없으면 결제 진행 불필요)
-const user = await getUser(id);
+const user = await getUser(id)
 ```
 
 ### 주석을 반드시 작성해야 하는 경우
 
 #### 1. 도메인 계산 로직 (사주/별자리/MBTI)
+
 사주, 별자리, MBTI 관련 모든 계산에는 **근거 문서 링크**를 반드시 포함하세요.
 
 ```typescript
@@ -47,6 +48,7 @@ export function calculateDayPillar(birthDate: Date): DayPillar {
 ```
 
 #### 2. 오행 상생상극 매핑 테이블
+
 ```typescript
 /**
  * 오행 상생(相生) 관계: 목→화→토→금→수→목 (생성 관계)
@@ -96,9 +98,9 @@ export async function updateSession(request: NextRequest) {
 // 실제 결제 금액과 DB에 저장된 금액이 일치하는지 확인
 // 이 검증 없이는 클라이언트에서 금액을 조작할 수 있음
 // 참고: https://developers.portone.io/docs/ko/v2-payment/webhook
-const paymentData = await PortOneClient.getPayment(paymentId);
+const paymentData = await PortOneClient.getPayment(paymentId)
 if (paymentData.amount !== expectedAmount) {
-  throw new Error('결제 금액 불일치 - 위변조 의심');
+  throw new Error('결제 금액 불일치 - 위변조 의심')
 }
 ```
 
@@ -108,7 +110,7 @@ if (paymentData.amount !== expectedAmount) {
 // TODO(MVP 이후): 현재는 간단한 룰베이스 계산만 구현
 // 추후 더 정확한 만세력 DB를 사용하거나 외부 API 연동 검토
 // 관련 이슈: #13
-const dayPillar = calculateDayPillarSimple(birthDate);
+const dayPillar = calculateDayPillarSimple(birthDate)
 
 // FIXME: Edge case - 자시(23:00-01:00)는 날짜가 바뀌는 시간
 // 현재는 자시를 당일로 처리하지만, 엄밀히는 다음날로 봐야 함
@@ -125,18 +127,18 @@ const [sajuScore, zodiacScore, mbtiScore] = await Promise.all([
   calculateSajuCompatibility(user1.dayPillar, user2.dayPillar),
   calculateZodiacCompatibility(user1.zodiac, user2.zodiac),
   calculateMbtiCompatibility(user1.mbti, user2.mbti),
-]);
+])
 ```
 
 ### 주석 스타일 가이드
 
-| 상황 | 스타일 |
-|------|--------|
-| 함수/클래스 문서화 | `/** JSDoc */` |
-| 인라인 설명 | `// 한 줄` |
-| 섹션 구분 | `// ===== 섹션명 =====` |
-| 임시 코드 | `// TODO:`, `// FIXME:`, `// HACK:` |
-| 참고 자료 | `// 참고: URL` |
+| 상황               | 스타일                              |
+| ------------------ | ----------------------------------- |
+| 함수/클래스 문서화 | `/** JSDoc */`                      |
+| 인라인 설명        | `// 한 줄`                          |
+| 섹션 구분          | `// ===== 섹션명 =====`             |
+| 임시 코드          | `// TODO:`, `// FIXME:`, `// HACK:` |
+| 참고 자료          | `// 참고: URL`                      |
 
 ## 코드 작성 원칙
 

@@ -13,5 +13,5 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold text-destiny-text mb-8">로그인</h1>
       {/* TODO: 카카오 로그인 버튼 */}
     </main>
-  );
+  )
 }

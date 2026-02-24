@@ -10,16 +10,16 @@
 
 ## 기술 스택
 
-| 분류 | 기술 |
-|---|---|
+| 분류         | 기술                                              |
+| ------------ | ------------------------------------------------- |
 | **Frontend** | Next.js 15 (App Router), TypeScript, Tailwind CSS |
-| **Backend** | Next.js API Routes / Supabase Edge Functions |
-| **Database** | Supabase (PostgreSQL) |
-| **Auth** | Supabase Auth + 카카오 OAuth |
-| **Infra** | Vercel (배포), Supabase (BaaS) |
-| **AI** | Claude API (궁합 해설 문장 생성) |
-| **Payment** | PortOne (포트원) |
-| **OG Image** | @vercel/og 또는 Puppeteer (카드 이미지 생성) |
+| **Backend**  | Next.js API Routes / Supabase Edge Functions      |
+| **Database** | Supabase (PostgreSQL)                             |
+| **Auth**     | Supabase Auth + 카카오 OAuth                      |
+| **Infra**    | Vercel (배포), Supabase (BaaS)                    |
+| **AI**       | Claude API (궁합 해설 문장 생성)                  |
+| **Payment**  | PortOne (포트원)                                  |
+| **OG Image** | @vercel/og 또는 Puppeteer (카드 이미지 생성)      |
 
 ## 프로젝트 구조 (계획)
 

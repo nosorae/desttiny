@@ -3,16 +3,16 @@
 
 // 사용자 기본 정보
 export type User = {
-  id: string;
-  email: string;
-  nickname: string | null;
-  createdAt: string;
-};
+  id: string
+  email: string
+  nickname: string | null
+  createdAt: string
+}
 
 // 온보딩 입력 정보
 export type OnboardingInput = {
-  birthDate: string; // YYYY-MM-DD
-  birthTime: string | null; // HH:MM (시간 모를 경우 null)
-  gender: "male" | "female";
-  mbti: string | null;
-};
+  birthDate: string // YYYY-MM-DD
+  birthTime: string | null // HH:MM (시간 모를 경우 null)
+  gender: 'male' | 'female'
+  mbti: string | null
+}

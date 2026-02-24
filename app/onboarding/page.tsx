@@ -17,5 +17,5 @@ export default function OnboardingPage() {
     <main className="flex min-h-screen flex-col px-6 py-8">
       <h1 className="text-xl font-bold text-destiny-text">기본 정보 입력</h1>
     </main>
-  );
+  )
 }

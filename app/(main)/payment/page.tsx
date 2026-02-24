@@ -18,5 +18,5 @@ export default function PaymentPage() {
     <main className="px-6 py-8">
       <h1 className="text-xl font-bold text-destiny-text">결제 이력</h1>
     </main>
-  );
+  )
 }
