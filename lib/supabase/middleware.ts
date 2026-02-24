@@ -76,7 +76,14 @@ export async function updateSession(request: NextRequest) {
   if (!user && isProtectedPath) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    // getUser() 호출 중 토큰 갱신이 발생했을 수 있으므로
+    // supabaseResponse에 설정된 갱신 쿠키를 리다이렉트 응답에도 복사
+    // 이를 생략하면 갱신된 토큰이 유실되어 다음 요청에서 불필요한 재갱신 발생
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
   // 로그인된 사용자가 /login 접근 시 /profile로 리다이렉트
@@ -86,7 +93,12 @@ export async function updateSession(request: NextRequest) {
   if (user && isAuthPath) {
     const url = request.nextUrl.clone()
     url.pathname = '/profile'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    // 로그인된 사용자 리다이렉트 시에도 갱신된 세션 쿠키 전달
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
   // IMPORTANT: 반드시 supabaseResponse를 그대로 반환
