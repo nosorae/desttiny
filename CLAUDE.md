@@ -2,6 +2,37 @@
 
 이 파일은 Claude Code가 이 프로젝트를 개발할 때 따라야 하는 규칙을 정의합니다.
 
+## ⚠️ 최우선 행동 원칙 (모든 규칙보다 우선)
+
+### 1. 못 하면 못 한다고 즉시 말할 것
+
+지시를 수행할 수 없거나 실패했을 때 **우회하거나 비슷한 것으로 대체하기 전에 반드시 먼저 말해야 한다.**
+
+```
+❌ 나쁜 행동
+- 지시한 도구/방법이 안 되자 말없이 다른 방법으로 대체
+- 실패했는데 성공한 척 넘어가기
+- 오류가 났는데 슬쩍 다른 접근으로 바꾸기
+
+✅ 올바른 행동
+- "지시하신 방법이 실패했습니다. 이유: [이유]. 대안으로 [대안]을 시도해도 될까요?"
+- "이 작업은 제가 할 수 없습니다. 이유: [이유]."
+```
+
+### 2. 지시와 다르게 실행했으면 반드시 명시할 것
+
+지시한 것과 **다른 방법, 다른 도구, 다른 순서**로 실행했을 경우 결과 보고 시 반드시 밝혀야 한다.
+
+```
+❌ 나쁜 행동
+- A 도구를 쓰라 했는데 B 도구를 쓰고 결과만 보고
+- 명령과 다르게 실행했는데 사용자가 모르게 넘어가기
+
+✅ 올바른 행동
+- "지시하신 A 대신 B를 사용했습니다. 이유: [이유]."
+- 지시와 정확히 같은 방법으로 실행했을 때만 그냥 결과 보고
+```
+
 ## 기술 스택 요약
 
 - **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS 4
@@ -180,6 +211,47 @@ types/                # TypeScript 타입 정의
 - `NEXT_PUBLIC_` 접두사: 브라우저에서 접근 가능 (공개해도 되는 값)
 - 접두사 없음: 서버에서만 접근 가능 (시크릿 키 등)
 - 절대로 시크릿 키를 `NEXT_PUBLIC_`으로 설정하지 말 것
+
+## Supabase 작업 규칙
+
+### MCP 사용
+
+Claude Code에 Supabase MCP가 연결되어 있으므로 DB 작업은 MCP 도구로 직접 수행합니다.
+
+```
+mcp__plugin_supabase_supabase__execute_sql    → SQL 조회
+mcp__plugin_supabase_supabase__apply_migration → DDL (테이블/인덱스/RLS 변경)
+mcp__plugin_supabase_supabase__list_tables     → 테이블 목록
+mcp__plugin_supabase_supabase__get_advisors   → 보안/성능 점검
+```
+
+### 마이그레이션 워크플로우
+
+```
+1. supabase/migrations/{timestamp}_{name}.sql 파일 작성
+2. apply_migration MCP로 DB에 적용
+3. git commit → pre-commit 훅이 자동으로 types/database.ts 재생성
+```
+
+### RLS 작성 규칙
+
+```sql
+-- ✅ (select auth.uid()): 캐싱으로 94-99% 성능 향상
+using ((select auth.uid()) = user_id)
+
+-- ✅ TO authenticated: role 체크 공식 패턴
+create policy "..." on table_name for select
+  to authenticated using (true);
+
+-- ❌ 직접 호출 (매 row마다 실행됨)
+using (auth.uid() = user_id)
+```
+
+### TypeScript 타입 동기화
+
+`types/database.ts`는 자동 생성 파일입니다. 직접 수정하지 마세요.
+마이그레이션 커밋 시 pre-commit 훅이 자동으로 재생성합니다.
+수동으로 재생성할 경우: `npm run db:types`
 
 ## 스킬 활용
 

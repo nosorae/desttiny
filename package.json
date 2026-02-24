@@ -10,16 +10,8 @@
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx,mjs}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,css,md}": [
-      "prettier --write"
-    ]
+    "prepare": "husky",
+    "db:types": "supabase gen types typescript --project-id owdbxirdhbbwweghsgri --schema public > types/database.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -42,6 +34,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
+    "supabase": "^2.76.14",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
