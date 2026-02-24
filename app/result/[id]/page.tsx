@@ -18,16 +18,16 @@
 // 참고: https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
 // TODO(#21): 궁합 결과 리포트 UI 구현
 type Props = {
-  params: Promise<{ id: string }>;
-};
+  params: Promise<{ id: string }>
+}
 
 export default async function ResultPage({ params }: Props) {
-  const { id } = await params;
+  const { id } = await params
 
   return (
     <main className="px-6 py-8">
       <h1 className="text-xl font-bold text-destiny-text">궁합 결과</h1>
       <p className="text-destiny-text-muted text-sm mt-2">ID: {id}</p>
     </main>
-  );
+  )
 }

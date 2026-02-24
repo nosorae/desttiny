@@ -20,5 +20,5 @@ export default function CompatibilityPage() {
     <main className="px-6 py-8">
       <h1 className="text-xl font-bold text-destiny-text">궁합</h1>
     </main>
-  );
+  )
 }
