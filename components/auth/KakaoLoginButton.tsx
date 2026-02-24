@@ -24,6 +24,9 @@ export function KakaoLoginButton() {
       provider: 'kakao',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        // openid만 요청 - 사용자 ID만 받고 닉네임/이메일/프로필 사진 불요청
+        // 카카오 동의항목 설정 없이 동작, 필요한 정보는 온보딩에서 직접 입력받음
+        scopes: 'openid',
       },
     })
 
