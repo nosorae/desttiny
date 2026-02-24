@@ -4,8 +4,8 @@
  * 로그인 사용자의 사주/별자리/MBTI와 파트너 정보를 받아 궁합을 계산합니다.
  * 파트너는 (A) 등록된 사용자 ID 또는 (B) 직접 입력 두 가지 방식으로 지정 가능.
  *
- * 무료 슬롯 시스템: daily_free_slots 테이블에서 오늘 날짜 슬롯 확인 후
- * used_count >= max_count이면 402 반환 (유료 결제 필요)
+ * 무료 슬롯 시스템: use_daily_slot() RPC로 원자적으로 슬롯 확인 + 소진 처리
+ * used_count >= max_count이면 false 반환 → 402 반환 (유료 결제 필요)
  *
  * Debug 필드: 개발·QA용으로 실제 LLM 프롬프트와 raw 응답을 항상 포함
  */
@@ -22,6 +22,7 @@ import type {
   RelationshipType,
   MbtiType,
   PersonCompatibilityInput,
+  CompatibilityResult,
 } from '@/lib/compatibility/types'
 import type { ZodiacId } from '@/lib/zodiac/types'
 import type { Pillar } from '@/lib/saju/types'
@@ -193,24 +194,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // ===== 3. 무료 슬롯 확인 =====
-  // 오늘 날짜의 무료 슬롯이 없거나 모두 소진된 경우 402 반환
-  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-
-  const { data: slotData, error: slotError } = await supabase
-    .from('daily_free_slots')
-    .select('id, used_count, max_count')
-    .eq('slot_date', today)
-    .single()
-
-  if (slotError || !slotData || slotData.used_count >= slotData.max_count) {
-    return NextResponse.json(
-      { error: '오늘의 무료 궁합 횟수가 모두 소진되었습니다. 결제 후 이용해주세요.' },
-      { status: 402 }
-    )
-  }
-
-  // ===== 4. 요청자(로그인 사용자) 프로필 조회 =====
+  // ===== 3. 요청자(로그인 사용자) 프로필 조회 =====
   const { data: requesterProfile, error: requesterError } = await supabase
     .from('profiles')
     .select('id, day_pillar, zodiac_sign, mbti, nickname, gender')
@@ -256,7 +240,7 @@ export async function POST(request: NextRequest) {
     gender: requesterProfile.gender ?? null,
   }
 
-  // ===== 5. 파트너 정보 구성 =====
+  // ===== 4. 파트너 정보 구성 =====
   let person2: PersonCompatibilityInput
   // DB 저장용 파트너 메타데이터
   let partnerIdForDb: string | null = null
@@ -305,6 +289,8 @@ export async function POST(request: NextRequest) {
         ? (partnerProfile.mbti as MbtiType)
         : null
 
+    // 파트너 프로필의 gender는 우리 DB에서 가져오므로 이미 유효한 값
+    // (profiles 테이블 CHECK 제약조건으로 보장됨)
     person2 = {
       dayPillar: partnerDayPillar,
       zodiacId: partnerZodiacId,
@@ -330,6 +316,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Fix 4: birthTime HH:MM 형식 검증 (parseBirthHour 호출 전 먼저 형식 확인)
+    // parseBirthHour는 숫자 범위만 체크하므로 "99:00" 같은 값이 통과될 수 있음
+    if (partner.birthTime) {
+      const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/
+      if (!TIME_REGEX.test(partner.birthTime)) {
+        return NextResponse.json({ error: '시간 형식이 올바르지 않습니다 (HH:MM)' }, { status: 400 })
+      }
+    }
+
     let birthHour: number | undefined
     try {
       birthHour = parseBirthHour(partner.birthTime)
@@ -351,12 +346,18 @@ export async function POST(request: NextRequest) {
         ? (partner.mbti as MbtiType)
         : null
 
+    // Fix 1: partner.gender가 'male' 또는 'female'이 아닌 경우 null로 처리
+    // gender는 선택 필드이므로 잘못된 값은 조용히 null로 변환 (사용자 경험 우선)
+    const partnerGender = partner.gender === 'male' || partner.gender === 'female'
+      ? partner.gender
+      : null
+
     person2 = {
       dayPillar: partnerDayPillar,
       zodiacId: partnerZodiacId,
       mbti: partnerMbti,
       name: partner.name!,
-      gender: partner.gender ?? null,
+      gender: partnerGender,
     }
 
     partnerNameForDb = partner.name!
@@ -365,7 +366,22 @@ export async function POST(request: NextRequest) {
     partnerDayPillarForDb = partnerDayPillar?.label ?? null
     partnerZodiacSignForDb = partnerZodiacId
     partnerMbtiForDb = partner.mbti ?? null
-    partnerGenderForDb = partner.gender ?? null
+    partnerGenderForDb = partnerGender
+  }
+
+  // ===== 5. 무료 슬롯 원자적 사용 =====
+  // use_daily_slot()는 SECURITY DEFINER 함수로 RLS 우회 + race condition 방지
+  // (SELECT + UPDATE를 분리하면 동시 요청 시 중복 소진 가능)
+  const today = new Date().toISOString().slice(0, 10) // UTC 기준 (Vercel 서버 환경)
+  const { data: slotUsed, error: slotError } = await supabase.rpc('use_daily_slot', {
+    p_slot_date: today,
+  })
+
+  if (slotError || !slotUsed) {
+    return NextResponse.json(
+      { error: '오늘의 무료 궁합이 모두 소진되었습니다. 결제 후 이용해주세요' },
+      { status: 402 }
+    )
   }
 
   // ===== 6. LLM 프롬프트/응답 캡처를 위한 debug provider 래핑 =====
@@ -387,12 +403,19 @@ export async function POST(request: NextRequest) {
   }
 
   // ===== 7. 궁합 계산 =====
-  const result = await calculateCompatibility(
-    person1,
-    person2,
-    relationshipType as RelationshipType,
-    debugProvider
-  )
+  // Fix 3: calculateCompatibility 실패 시 500 반환 (LLM 오류 등)
+  let result: CompatibilityResult
+  try {
+    result = await calculateCompatibility(
+      person1,
+      person2,
+      relationshipType as RelationshipType,
+      debugProvider
+    )
+  } catch (error) {
+    console.error('[POST /api/compatibility] 궁합 계산 실패:', error)
+    return NextResponse.json({ error: '궁합 계산 중 오류가 발생했습니다.' }, { status: 500 })
+  }
 
   // ===== 8. DB 저장 =====
   // 저장 실패 시 로그만 남기고 결과는 정상 반환 (사용자 경험 우선)
@@ -426,16 +449,6 @@ export async function POST(request: NextRequest) {
     console.error('[POST /api/compatibility] DB 저장 실패:', saveError)
   } else {
     savedId = savedResult?.id ?? null
-
-    // 무료 슬롯 사용 횟수 증가
-    const { error: slotUpdateError } = await supabase
-      .from('daily_free_slots')
-      .update({ used_count: slotData.used_count + 1 })
-      .eq('id', slotData.id)
-
-    if (slotUpdateError) {
-      console.error('[POST /api/compatibility] 슬롯 업데이트 실패:', slotUpdateError)
-    }
   }
 
   // ===== 9. 응답 반환 =====
