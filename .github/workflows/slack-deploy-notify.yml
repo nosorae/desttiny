@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # 이전 커밋과 비교하기 위해 2개 커밋 가져옴
+          fetch-depth: 2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,7 +27,6 @@ jobs:
       - name: Get changed files
         id: changed
         run: |
-          # 머지 커밋의 경우 부모 커밋과 비교, 일반 커밋은 이전 커밋과 비교
           if git rev-parse HEAD^2 >/dev/null 2>&1; then
             # 머지 커밋: main 쪽 부모(HEAD^1)와 현재(HEAD) 비교
             CHANGED=$(git diff --name-only HEAD^1 HEAD)
@@ -55,47 +54,53 @@ jobs:
           echo "title=${FIRST_LINE}" >> $GITHUB_OUTPUT
 
       - name: Send Slack notification
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "🚀 desttiny 프로덕션 배포",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*커밋:*\n${{ steps.commit.outputs.title }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*작성자:*\n${{ github.actor }}"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*📄 수정된 페이지:*\n${{ steps.routes.outputs.routes }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<https://desttiny.vercel.app|🔗 배포 확인>  |  <${{ github.event.head_commit.url }}|📝 커밋 상세>"
-                  }
-                }
-              ]
-            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          COMMIT_TITLE: ${{ steps.commit.outputs.title }}
+          ROUTES: ${{ steps.routes.outputs.routes }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          PAYLOAD=$(cat <<EOF
+          {
+            "blocks": [
+              {
+                "type": "header",
+                "text": { "type": "plain_text", "text": "🚀 desttiny 프로덕션 배포", "emoji": true }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  { "type": "mrkdwn", "text": "*커밋:*\n${COMMIT_TITLE}" },
+                  { "type": "mrkdwn", "text": "*작성자:*\n${ACTOR}" }
+                ]
+              },
+              {
+                "type": "section",
+                "text": { "type": "mrkdwn", "text": "*📄 수정된 페이지:*\n${ROUTES}" }
+              },
+              {
+                "type": "section",
+                "text": { "type": "mrkdwn", "text": "<https://desttiny.vercel.app|🔗 배포 확인>  |  <${COMMIT_URL}|📝 커밋 상세>" }
+              }
+            ]
+          }
+          EOF
+          )
+
+          echo "Sending to Slack..."
+          RESPONSE=$(curl -s -o /tmp/slack_response.txt -w "%{http_code}" \
+            -X POST \
+            -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL")
+
+          echo "HTTP Status: $RESPONSE"
+          echo "Slack response: $(cat /tmp/slack_response.txt)"
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Slack 전송 실패"
+            exit 1
+          fi
+
+          echo "Slack 전송 성공 ✅"
