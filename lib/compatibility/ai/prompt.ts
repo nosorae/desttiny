@@ -6,7 +6,7 @@
  *
  * 출력 형식: JSON { summary, sections: [{title, content, area}], finalSummary }
  */
-import type { PersonCompatibilityInput, RelationshipType } from '../types'
+import type { PersonCompatibilityInput, RelationshipType, CompatibilityScore } from '../types'
 
 const RELATIONSHIP_KO: Record<RelationshipType, string> = {
   lover: '연인', ex: '전연인', crush: '썸',
@@ -20,10 +20,15 @@ export interface CompatibilityPromptInput {
   person2: PersonCompatibilityInput
   relationshipType: RelationshipType
   totalScore: number
+  breakdown: {
+    saju: CompatibilityScore
+    zodiac: CompatibilityScore
+    mbti: CompatibilityScore
+  }
 }
 
 export function buildCompatibilityPrompt(data: CompatibilityPromptInput): string {
-  const { person1, person2, relationshipType, totalScore } = data
+  const { person1, person2, relationshipType, totalScore, breakdown } = data
   const relKo = RELATIONSHIP_KO[relationshipType]
   const isIntimate = INTIMATE_TYPES.includes(relationshipType)
 
@@ -31,6 +36,22 @@ export function buildCompatibilityPrompt(data: CompatibilityPromptInput): string
     p.dayPillar ? `사주 일주 ${p.dayPillar.label}(${p.dayPillar.element})` : '사주 정보 없음'
   const describePersonZodiac = (p: PersonCompatibilityInput) =>
     p.zodiacId ? `별자리 ${p.zodiacId}` : '별자리 정보 없음'
+
+  // 계산 결과를 텍스트로 포맷 (details가 없으면 세부사항 섹션 생략)
+  const formatScore = (label: string, weight: string, s: CompatibilityScore): string => {
+    const lines = [`${label} (${weight}): ${s.score}점`, `사유: ${s.reason}`]
+    if (s.details.length > 0) {
+      lines.push('세부사항:')
+      s.details.forEach(d => lines.push(`- ${d}`))
+    }
+    return lines.join('\n')
+  }
+
+  const breakdownSection = [
+    formatScore('사주 궁합', '40%', breakdown.saju),
+    formatScore('별자리 궁합', '30%', breakdown.zodiac),
+    formatScore('MBTI 궁합', '30%', breakdown.mbti),
+  ].join('\n\n')
 
   const areas = [
     '소통(communication): 대화 스타일, 공감 방식',
@@ -54,8 +75,11 @@ export function buildCompatibilityPrompt(data: CompatibilityPromptInput): string
 관계 유형: ${relKo}
 종합 점수: ${totalScore}점 / 100점
 
+[3체계 계산 결과]
+${breakdownSection}
+
 [작성 원칙]
-1. 3체계를 분절하지 말고 통합적으로 해석하세요
+1. 위의 3체계 계산 결과를 바탕으로 통합적으로 해석하세요
 2. 각 영역 제목은 후킹형으로 작성하세요 (예: "둘이 싸우면 누가 이길까?")
 3. 본문은 구체적이고 실용적인 조언을 포함하세요 (200-300자)
 4. 한국어로 작성하세요

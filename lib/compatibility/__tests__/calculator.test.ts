@@ -125,3 +125,19 @@ describe('calculateCompatibility - 3체계 통합', () => {
     expect(result.totalScore).toBeGreaterThanOrEqual(0)
   })
 })
+
+describe('calculateCompatibility - LLM 프롬프트 검증', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('LLM에 전달되는 프롬프트에 3체계 계산 결과가 포함된다', async () => {
+    await calculateCompatibility(
+      makePerson('갑', '인', 'wood', 'aries', 'INTJ'),
+      makePerson('병', '오', 'fire', 'leo', 'ENFP'),
+      'friend', mockProvider
+    )
+    const calledPrompt = (mockProvider.generateText as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
+    expect(calledPrompt).toContain('3체계 계산 결과')
+  })
+})

@@ -88,7 +88,7 @@ export async function calculateCompatibility(
   )
 
   // 3. LLM 해설 생성 (실패 시 폴백)
-  const prompt = buildCompatibilityPrompt({ person1, person2, relationshipType, totalScore })
+  const prompt = buildCompatibilityPrompt({ person1, person2, relationshipType, totalScore, breakdown: { saju: sajuScore, zodiac: zodiacScore, mbti: mbtiScore } })
   let analysis: CompatibilityAnalysis
   try {
     const rawText = await provider.generateText(prompt)
