@@ -186,6 +186,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // 파트너 이름 길이 검증 (LLM 프롬프트 토큰 비용 및 악용 방지)
+  if (partner.name && partner.name.length > 50) {
+    return NextResponse.json({ error: '파트너 이름은 50자 이내로 입력해주세요.' }, { status: 400 })
+  }
+
   // MBTI 유효성 검사 (있는 경우)
   if (partner.mbti && !VALID_MBTI_TYPES.includes(partner.mbti as MbtiType)) {
     return NextResponse.json(
@@ -316,24 +321,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fix 4: birthTime HH:MM 형식 검증 (parseBirthHour 호출 전 먼저 형식 확인)
-    // parseBirthHour는 숫자 범위만 체크하므로 "99:00" 같은 값이 통과될 수 있음
+    // birthTime HH:MM 형식 검증 후 hour 추출
+    // TIME_REGEX 통과 후 parseBirthHour는 예외를 던지지 않음 (try/catch 불필요)
     if (partner.birthTime) {
       const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/
       if (!TIME_REGEX.test(partner.birthTime)) {
         return NextResponse.json({ error: '시간 형식이 올바르지 않습니다 (HH:MM)' }, { status: 400 })
       }
     }
-
-    let birthHour: number | undefined
-    try {
-      birthHour = parseBirthHour(partner.birthTime)
-    } catch (error) {
-      return NextResponse.json(
-        { error: `생시 형식이 올바르지 않습니다. HH:MM 형식으로 입력해주세요.` },
-        { status: 400 }
-      )
-    }
+    const birthHour = parseBirthHour(partner.birthTime)
 
     // 사주/별자리 계산 실패 시 null 사용 (기본 50점 적용)
     const [partnerDayPillar, partnerZodiacId] = await Promise.all([
@@ -458,6 +454,8 @@ export async function POST(request: NextRequest) {
   }
 
   // ===== 9. 응답 반환 =====
+  // TODO: production 배포 전 debug 필드 제거 또는 NODE_ENV !== 'production' 조건 추가
+  //   debug 필드에는 LLM 프롬프트 전문과 raw 응답이 포함되어 내부 시스템 설계가 노출될 수 있음
   return NextResponse.json({
     id: savedId,
     totalScore: result.totalScore,

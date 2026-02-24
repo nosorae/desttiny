@@ -13,7 +13,7 @@ create table profiles (
   birth_date date not null,
   birth_time time, -- 시간 모를 경우 null
   day_pillar text, -- 사주 일주 (예: "갑자")
-  zodiac_sign text, -- 별자리 (예: "물병자리")
+  zodiac_sign text, -- 별자리 영문 ID (예: "aquarius") - lib/zodiac/types.ts ZodiacId 타입과 동일
   mbti text check (mbti ~* '^[EI][SN][TF][JP]$'), -- 정규식으로 유효성 검사
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
