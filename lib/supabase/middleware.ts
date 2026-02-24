@@ -67,8 +67,11 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // 비로그인 사용자가 보호된 라우트 접근 시 /login으로 리다이렉트
+  // pathname === path: 정확한 경로 일치 (예: /profile)
+  // pathname.startsWith(path + '/'): 하위 경로 일치 (예: /profile/settings)
+  // startsWith(path)만 사용 시 /result가 /results도 매칭하는 오탐 방지
   const isProtectedPath = PROTECTED_PATHS.some((path) =>
-    pathname.startsWith(path)
+    pathname === path || pathname.startsWith(path + '/')
   )
   if (!user && isProtectedPath) {
     const url = request.nextUrl.clone()
@@ -77,7 +80,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // 로그인된 사용자가 /login 접근 시 /profile로 리다이렉트
-  const isAuthPath = AUTH_PATHS.some((path) => pathname.startsWith(path))
+  // TODO(MVP 이후): ?next= 파라미터로 로그인 전 원래 가려던 페이지로 리다이렉트 지원
+  // 예: /login?next=/compatibility → 로그인 후 /compatibility로 이동
+  const isAuthPath = AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(path + '/'))
   if (user && isAuthPath) {
     const url = request.nextUrl.clone()
     url.pathname = '/profile'
