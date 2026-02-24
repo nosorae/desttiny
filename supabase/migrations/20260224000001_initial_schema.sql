@@ -47,8 +47,12 @@ create table compatibility_results (
 
 comment on table compatibility_results is '궁합 분석 결과 - 사주/별자리/MBTI 종합 점수';
 
+-- 궁합 결과 조회 성능 최적화: 사용자별 결과 목록 조회 시 필수
+create index compatibility_results_requester_id_idx on compatibility_results(requester_id);
+
 -- ===== 3. payments 테이블 =====
 -- PortOne V2 결제 내역
+-- status 값: PortOne V2 기준 READY→pending, PAID→paid, FAILED→failed, CANCELED→cancelled
 create table payments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
@@ -63,6 +67,9 @@ create table payments (
 
 comment on table payments is '결제 내역 - PortOne V2 연동';
 
+-- 결제 내역 조회 성능 최적화: 사용자별 결제 목록 조회 시 필수
+create index payments_user_id_idx on payments(user_id);
+
 -- ===== 4. daily_free_slots 테이블 =====
 -- 일일 선착순 무료 궁합 슬롯 (하루 최대 20개)
 create table daily_free_slots (
@@ -72,7 +79,9 @@ create table daily_free_slots (
   max_count integer not null default 20,
   created_at timestamptz default now() not null,
   -- 날짜별 1개 레코드만 허용
-  constraint unique_slot_date unique (slot_date)
+  constraint unique_slot_date unique (slot_date),
+  -- used_count가 max_count를 초과하지 못하도록 DB 레벨에서 보장 (동시성 방어)
+  constraint used_count_within_max check (used_count <= max_count)
 );
 
 comment on table daily_free_slots is '일일 선착순 무료 궁합 슬롯 (하루 최대 20개)';
@@ -97,57 +106,61 @@ create trigger payments_updated_at
 
 -- ===== RLS (Row Level Security) 정책 =====
 -- 로그인한 사용자만 본인 데이터에 접근 가능
+-- (select auth.uid()): auth.uid() 직접 호출 대비 캐싱되어 쿼리당 1회만 실행 (94-99% 성능 향상)
+-- 참고: https://supabase.com/docs/guides/database/postgres/row-level-security#use-auth-functions-in-policies
 
 -- profiles: 본인 프로필만 CRUD 가능
 alter table profiles enable row level security;
 
 create policy "profiles_select_own"
   on profiles for select
-  using (auth.uid() = id);
+  using ((select auth.uid()) = id);
 
 create policy "profiles_insert_own"
   on profiles for insert
-  with check (auth.uid() = id);
+  with check ((select auth.uid()) = id);
 
 create policy "profiles_update_own"
   on profiles for update
-  using (auth.uid() = id);
+  using ((select auth.uid()) = id);
 
 create policy "profiles_delete_own"
   on profiles for delete
-  using (auth.uid() = id);
+  using ((select auth.uid()) = id);
 
 -- compatibility_results: 본인이 요청한 궁합 결과만 조회/생성 가능
 alter table compatibility_results enable row level security;
 
 create policy "compatibility_select_own"
   on compatibility_results for select
-  using (auth.uid() = requester_id);
+  using ((select auth.uid()) = requester_id);
 
 create policy "compatibility_insert_own"
   on compatibility_results for insert
-  with check (auth.uid() = requester_id);
+  with check ((select auth.uid()) = requester_id);
 
 -- payments: 본인 결제 내역만 조회/생성 가능
 alter table payments enable row level security;
 
 create policy "payments_select_own"
   on payments for select
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 create policy "payments_insert_own"
   on payments for insert
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 -- payments update는 서버(service_role)에서만 가능 - 결제 상태 위변조 방지
 -- 클라이언트에서 결제 상태를 직접 변경할 수 없음
 
 -- daily_free_slots: 모든 인증 사용자가 조회 가능, 수정은 서버에서만
+-- TO authenticated: auth.role() 직접 비교보다 공식 패턴이며 더 명확
 alter table daily_free_slots enable row level security;
 
 create policy "daily_free_slots_select_authenticated"
   on daily_free_slots for select
-  using (auth.role() = 'authenticated');
+  to authenticated
+  using (true);
 
 -- daily_free_slots insert/update는 서버(service_role)에서만 가능
 -- 선착순 슬롯의 카운트 조작 방지

@@ -81,6 +81,18 @@ cp .env.example .env.local
 npm run dev
 ```
 
+## 주요 스크립트
+
+| 명령어             | 설명                                    |
+| ------------------ | --------------------------------------- |
+| `npm run dev`      | 개발 서버 실행                          |
+| `npm run build`    | 프로덕션 빌드                           |
+| `npm run lint`     | ESLint 검사                             |
+| `npm run format`   | Prettier 포맷팅                         |
+| `npm run db:types` | Supabase DB → TypeScript 타입 자동 생성 |
+
+> `npm run db:types` 최초 실행 전 `npx supabase login` 필요
+
 ## 환경 변수 (.env.local)
 
 ```
