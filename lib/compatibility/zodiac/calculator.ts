@@ -3,7 +3,11 @@
  */
 
 import type { ZodiacId } from '../../zodiac/types'
-import { ZODIAC_ELEMENT, ZODIAC_KO_NAMES } from '../../zodiac/types'
+import {
+  ZODIAC_ELEMENT,
+  ZODIAC_KO_NAMES,
+  ZODIAC_ELEMENT_KO,
+} from '../../zodiac/types'
 import type { CompatibilityScore } from '../types'
 import { ELEMENT_COMPATIBILITY } from './compatibility-map'
 
@@ -17,8 +21,8 @@ export function calculateZodiacCompatibility(
   const score = ELEMENT_COMPATIBILITY[element1][element2]
 
   const details: string[] = [
-    `${ZODIAC_KO_NAMES[z1]}: ${element1} 원소`,
-    `${ZODIAC_KO_NAMES[z2]}: ${element2} 원소`,
+    `${ZODIAC_KO_NAMES[z1]}: ${ZODIAC_ELEMENT_KO[element1]} 원소`,
+    `${ZODIAC_KO_NAMES[z2]}: ${ZODIAC_ELEMENT_KO[element2]} 원소`,
   ]
 
   const reason =

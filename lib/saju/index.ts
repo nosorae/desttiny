@@ -15,7 +15,7 @@ import { getFourPillars } from '@gracefullight/saju'
 import { createLuxonAdapter } from '@gracefullight/saju/adapters/luxon'
 import { DateTime } from 'luxon'
 
-import type { SajuProfile, Pillar, HeavenlyStem, EarthlyBranch } from './types'
+import type { SajuProfile, Pillar } from './types'
 import {
   HANJA_STEM_TO_KOREAN,
   HANJA_BRANCH_TO_KOREAN,
@@ -41,8 +41,16 @@ function toPillar(hanjaGanzhi: string): Pillar {
   const hanjaStem = hanjaGanzhi[0]
   const hanjaBranch = hanjaGanzhi[1]
 
-  const stem = HANJA_STEM_TO_KOREAN[hanjaStem] as HeavenlyStem
-  const branch = HANJA_BRANCH_TO_KOREAN[hanjaBranch] as EarthlyBranch
+  const stem = HANJA_STEM_TO_KOREAN[hanjaStem]
+  const branch = HANJA_BRANCH_TO_KOREAN[hanjaBranch]
+
+  // 라이브러리 업데이트로 알 수 없는 한자가 오면 명시적으로 에러 발생
+  // silent undefined 대신 fast-fail로 디버깅 용이
+  if (!stem || !branch) {
+    throw new Error(
+      `알 수 없는 한자 간지: "${hanjaGanzhi}" (천간=${hanjaStem}, 지지=${hanjaBranch})`
+    )
+  }
 
   return {
     stem,
@@ -68,12 +76,14 @@ export async function getSajuProfile(
   const hour = birthHour ?? 0
   const minute = 0
 
-  // Luxon DateTime으로 변환 (KST 기준)
+  // UTC getter 사용: 호출자가 날짜 값만 전달하므로 타임존 해석 없이 그대로 읽음
+  // getFullYear() 등 로컬 타임존 getter는 Vercel(UTC) 환경과 일치하지만
+  // UTC- 환경에서는 의도치 않게 하루 밀릴 수 있어 UTC getter로 명시
   const dt = DateTime.fromObject(
     {
-      year: birthDate.getFullYear(),
-      month: birthDate.getMonth() + 1,
-      day: birthDate.getDate(),
+      year: birthDate.getUTCFullYear(),
+      month: birthDate.getUTCMonth() + 1,
+      day: birthDate.getUTCDate(),
       hour,
       minute,
     },

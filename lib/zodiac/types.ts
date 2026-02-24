@@ -58,6 +58,14 @@ export const ZODIAC_EMOJI: Record<ZodiacId, string> = {
   pisces: '♓',
 }
 
+/** 4원소 → 한국어 이름 매핑 (사용자에게 표시할 이름) */
+export const ZODIAC_ELEMENT_KO: Record<ZodiacElement, string> = {
+  fire: '불',
+  earth: '흙',
+  air: '바람',
+  water: '물',
+}
+
 /**
  * 별자리 ID → 4원소 매핑
  * 전통 점성술 4원소 분류

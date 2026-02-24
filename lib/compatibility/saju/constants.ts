@@ -57,10 +57,10 @@ export const SIX_CLASH_PAIRS: [string, string][] = [
  * 오행 상생상극 원리에 따른 기본 점수
  */
 export const SAJU_SCORE_CONSTANTS = {
-  /** 상생 관계 (생하는 방향: 갑→병처럼 목→화) */
-  GENERATES: 20,
-  /** 역상생 관계 (생받는 방향: 병→갑처럼 화→목) */
-  GENERATED_BY: 15,
+  /** 상생 관계 (방향 무관 - 대칭성 보장) */
+  GENERATES: 18,
+  /** 역상생 관계 - GENERATES와 동일값으로 대칭성 보장 */
+  GENERATED_BY: 18,
   /** 비화 (같은 오행) */
   SAME_ELEMENT: 10,
   /** 상극 관계 (방향 무관 - 대칭성 보장) */

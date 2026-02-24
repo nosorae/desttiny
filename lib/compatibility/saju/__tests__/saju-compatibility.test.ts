@@ -87,11 +87,19 @@ describe('calculateSajuCompatibility - 오행 궁합 점수', () => {
     expect(Array.isArray(result.details)).toBe(true)
   })
 
-  it('대칭성: A↔B 결과와 B↔A 결과가 동일하다', () => {
+  it('대칭성: A↔B 결과와 B↔A 결과가 동일하다 (상극 쌍: 목↔토)', () => {
     const p1 = makePillar('갑', '자', 'wood')
     const p2 = makePillar('무', '진', 'earth')
     const ab = calculateSajuCompatibility(p1, p2)
     const ba = calculateSajuCompatibility(p2, p1)
+    expect(ab.score).toBe(ba.score)
+  })
+
+  it('대칭성: A↔B 결과와 B↔A 결과가 동일하다 (상생 쌍: 목↔화)', () => {
+    const woodPillar = makePillar('갑', '인', 'wood')
+    const firePillar = makePillar('병', '사', 'fire')
+    const ab = calculateSajuCompatibility(woodPillar, firePillar)
+    const ba = calculateSajuCompatibility(firePillar, woodPillar)
     expect(ab.score).toBe(ba.score)
   })
 })

@@ -98,6 +98,15 @@ export const HANJA_STEM_TO_KOREAN: Record<string, HeavenlyStem> = {
   癸: '계',
 }
 
+/** 오행 → 한국어 이름 매핑 (사용자에게 표시할 이름) */
+export const ELEMENT_KO_NAME: Record<FiveElement, string> = {
+  wood: '목(木)',
+  fire: '화(火)',
+  earth: '토(土)',
+  metal: '금(金)',
+  water: '수(水)',
+}
+
 /** 한자 지지 → 한글 변환 */
 export const HANJA_BRANCH_TO_KOREAN: Record<string, EarthlyBranch> = {
   子: '자',

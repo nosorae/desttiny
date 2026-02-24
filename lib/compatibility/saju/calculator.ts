@@ -15,6 +15,7 @@
  */
 
 import type { Pillar } from '../../saju/types'
+import { ELEMENT_KO_NAME } from '../../saju/types'
 import type { CompatibilityScore } from '../types'
 import {
   GENERATES,
@@ -58,22 +59,25 @@ export function calculateSajuCompatibility(
   const e1 = p1DayPillar.element
   const e2 = p2DayPillar.element
 
+  const e1Ko = ELEMENT_KO_NAME[e1]
+  const e2Ko = ELEMENT_KO_NAME[e2]
+
   // 천간 오행 관계 분석
   if (e1 === e2) {
     rawScore += C.SAME_ELEMENT
-    details.push(`두 사람 모두 ${e1} 오행 - 비화(比和) 관계`)
+    details.push(`두 사람 모두 ${e1Ko} 오행 - 비화(比和) 관계`)
   } else if (GENERATES[e1] === e2) {
     rawScore += C.GENERATES
-    details.push(`${e1}이 ${e2}를 생함 - 상생(相生) 관계`)
+    details.push(`${e1Ko}이 ${e2Ko}를 생함 - 상생(相生) 관계`)
   } else if (GENERATES[e2] === e1) {
     rawScore += C.GENERATED_BY
-    details.push(`${e2}이 ${e1}를 생함 - 상생(相生) 관계`)
+    details.push(`${e2Ko}이 ${e1Ko}를 생함 - 상생(相生) 관계`)
   } else if (CONTROLS[e1] === e2) {
     rawScore += C.CONTROLS
-    details.push(`${e1}이 ${e2}를 극함 - 상극(相剋) 관계`)
+    details.push(`${e1Ko}이 ${e2Ko}를 극함 - 상극(相剋) 관계`)
   } else if (CONTROLS[e2] === e1) {
     rawScore += C.CONTROLLED_BY
-    details.push(`${e2}이 ${e1}를 극함 - 상극(相剋) 관계`)
+    details.push(`${e2Ko}이 ${e1Ko}를 극함 - 상극(相剋) 관계`)
   }
 
   // 지지 합충 분석
