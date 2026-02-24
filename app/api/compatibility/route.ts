@@ -365,7 +365,7 @@ export async function POST(request: NextRequest) {
     partnerBirthTimeForDb = partner.birthTime ?? null
     partnerDayPillarForDb = partnerDayPillar?.label ?? null
     partnerZodiacSignForDb = partnerZodiacId
-    partnerMbtiForDb = partner.mbti ?? null
+    partnerMbtiForDb = partnerMbti  // validated 값 사용 (partner.mbti는 원시 입력이므로 직접 저장하면 DB 제약 위반 가능)
     partnerGenderForDb = partnerGender
   }
 
@@ -377,7 +377,13 @@ export async function POST(request: NextRequest) {
     p_slot_date: today,
   })
 
-  if (slotError || !slotUsed) {
+  if (slotError) {
+    // RPC 오류는 서버 에러 (슬롯 소진과 구분하여 클라이언트가 잘못 결제 시도하지 않도록)
+    console.error('[POST /api/compatibility] 슬롯 RPC 오류:', slotError)
+    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 })
+  }
+
+  if (!slotUsed) {
     return NextResponse.json(
       { error: '오늘의 무료 궁합이 모두 소진되었습니다. 결제 후 이용해주세요' },
       { status: 402 }
