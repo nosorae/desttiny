@@ -10,16 +10,16 @@
 
 ## 기술 스택
 
-| 분류 | 기술 |
-|---|---|
+| 분류         | 기술                                              |
+| ------------ | ------------------------------------------------- |
 | **Frontend** | Next.js 15 (App Router), TypeScript, Tailwind CSS |
-| **Backend** | Next.js API Routes / Supabase Edge Functions |
-| **Database** | Supabase (PostgreSQL) |
-| **Auth** | Supabase Auth + 카카오 OAuth |
-| **Infra** | Vercel (배포), Supabase (BaaS) |
-| **AI** | Claude API (궁합 해설 문장 생성) |
-| **Payment** | PortOne (포트원) |
-| **OG Image** | @vercel/og 또는 Puppeteer (카드 이미지 생성) |
+| **Backend**  | Next.js API Routes / Supabase Edge Functions      |
+| **Database** | Supabase (PostgreSQL)                             |
+| **Auth**     | Supabase Auth + 카카오 OAuth                      |
+| **Infra**    | Vercel (배포), Supabase (BaaS)                    |
+| **AI**       | Claude API (궁합 해설 문장 생성)                  |
+| **Payment**  | PortOne (포트원)                                  |
+| **OG Image** | @vercel/og 또는 Puppeteer (카드 이미지 생성)      |
 
 ## 프로젝트 구조 (계획)
 
@@ -80,6 +80,18 @@ cp .env.example .env.local
 # 개발 서버 실행
 npm run dev
 ```
+
+## 주요 스크립트
+
+| 명령어             | 설명                                    |
+| ------------------ | --------------------------------------- |
+| `npm run dev`      | 개발 서버 실행                          |
+| `npm run build`    | 프로덕션 빌드                           |
+| `npm run lint`     | ESLint 검사                             |
+| `npm run format`   | Prettier 포맷팅                         |
+| `npm run db:types` | Supabase DB → TypeScript 타입 자동 생성 |
+
+> `npm run db:types` 최초 실행 전 `npx supabase login` 필요
 
 ## 환경 변수 (.env.local)
 

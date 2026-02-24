@@ -24,23 +24,23 @@
 
 ### 핵심 개념 매핑
 
-| 안드로이드 | 웹 (이 프로젝트) | 설명 |
-|-----------|----------------|------|
-| Activity/Fragment | `page.tsx` 파일 | 화면 하나 |
-| XML Layout | JSX (TSX) | UI를 코드로 작성 |
-| ViewModel | Server Component (data fetching 부분) | 데이터 가져오기 |
-| LiveData/StateFlow | `useState`, `useReducer` | 상태 관리 |
-| RecyclerView + Adapter | `.map(() => <Item />)` | 리스트 렌더링 |
-| Room Database | Supabase (PostgreSQL) | 로컬 → 원격 DB |
-| Retrofit | Supabase 클라이언트 / fetch | 네트워크 통신 |
-| SharedPreferences | Supabase 세션 (쿠키) | 로그인 상태 저장 |
-| Intent (화면 이동) | `router.push('/path')` | 라우팅 |
-| Bundle (데이터 전달) | URL params, React state | 화면 간 데이터 |
-| `build.gradle` | `package.json` | 의존성 관리 |
-| `local.properties` | `.env.local` | 환경 변수 (git 제외) |
-| Gradle Build | `npm run build` | 빌드 |
-| 에뮬레이터 실행 | `npm run dev` → 브라우저 | 개발 서버 실행 |
-| APK 배포 | `git push` → Vercel 자동 배포 | 배포 |
+| 안드로이드             | 웹 (이 프로젝트)                      | 설명                 |
+| ---------------------- | ------------------------------------- | -------------------- |
+| Activity/Fragment      | `page.tsx` 파일                       | 화면 하나            |
+| XML Layout             | JSX (TSX)                             | UI를 코드로 작성     |
+| ViewModel              | Server Component (data fetching 부분) | 데이터 가져오기      |
+| LiveData/StateFlow     | `useState`, `useReducer`              | 상태 관리            |
+| RecyclerView + Adapter | `.map(() => <Item />)`                | 리스트 렌더링        |
+| Room Database          | Supabase (PostgreSQL)                 | 로컬 → 원격 DB       |
+| Retrofit               | Supabase 클라이언트 / fetch           | 네트워크 통신        |
+| SharedPreferences      | Supabase 세션 (쿠키)                  | 로그인 상태 저장     |
+| Intent (화면 이동)     | `router.push('/path')`                | 라우팅               |
+| Bundle (데이터 전달)   | URL params, React state               | 화면 간 데이터       |
+| `build.gradle`         | `package.json`                        | 의존성 관리          |
+| `local.properties`     | `.env.local`                          | 환경 변수 (git 제외) |
+| Gradle Build           | `npm run build`                       | 빌드                 |
+| 에뮬레이터 실행        | `npm run dev` → 브라우저              | 개발 서버 실행       |
+| APK 배포               | `git push` → Vercel 자동 배포         | 배포                 |
 
 ### 가장 중요한 Next.js 개념: Server vs Client Component
 
@@ -127,6 +127,7 @@ Claude Code에게 아래와 같이 요청하세요:
 ### Step 3: Claude Code의 작업 과정 이해
 
 Claude Code가 작업 중에는:
+
 1. 어떤 파일을 왜 만드는지 설명을 읽어보세요
 2. 모르는 개념이 나오면 바로 물어보세요: `"이 코드에서 useCallback이 왜 필요해?"`
 3. 구현 방향이 마음에 안 들면 중간에 조정하세요
@@ -145,11 +146,13 @@ Android Emulator에서 기능 테스트하듯이 브라우저에서 직접 클�
 Claude Code가 PR을 생성하면 GitHub에서 아래를 확인하세요:
 
 **Files changed 탭에서 확인할 것**:
+
 - 변경된 파일이 예상한 범위인지 (너무 많은 파일이 바뀌진 않는지)
 - 주석이 충분히 작성되어 있는지
 - 이해 안 가는 코드는 코멘트로 질문 남기기
 
 **리뷰 코멘트 남기는 방법**:
+
 ```
 줄 번호 옆 [+] 버튼 클릭 → 코멘트 작성 → "Start a review" 클릭
 → 모든 코멘트 작성 후 "Submit review" 클릭
@@ -237,6 +240,7 @@ Tailwind CSS 클래스는 [tailwindcss.com/docs](https://tailwindcss.com/docs)�
 ## 7. 트러블슈팅
 
 ### "빌드 에러가 났어요"
+
 ```bash
 npm run build
 # 에러 메시지를 Claude Code에게 그대로 붙여넣기
@@ -244,12 +248,14 @@ npm run build
 ```
 
 ### "화면이 이상하게 보여요"
+
 ```
 브라우저에서 F12 → Console 탭 확인
 빨간 에러 메시지를 Claude Code에게 전달
 ```
 
 ### "DB 데이터가 이상해요"
+
 ```
 Supabase 대시보드 → Table Editor → 해당 테이블 직접 확인
 또는 Supabase 대시보드 → Logs → 에러 로그 확인
