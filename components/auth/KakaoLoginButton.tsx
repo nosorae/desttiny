@@ -6,11 +6,20 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export function KakaoLoginButton() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // 카카오 로그인 페이지에서 뒤로가기로 복귀 시 버튼 비활성화 상태 해제
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') setIsLoading(false)
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
 
   const handleLogin = async () => {
     setIsLoading(true)
@@ -24,9 +33,9 @@ export function KakaoLoginButton() {
       provider: 'kakao',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        // openid만 요청 - 사용자 ID만 받고 닉네임/이메일/프로필 사진 불요청
-        // 카카오 동의항목 설정 없이 동작, 필요한 정보는 온보딩에서 직접 입력받음
-        scopes: 'openid',
+        // Supabase Kakao provider가 account_email, profile_image를 기본 scope로 항상 추가
+        // 카카오 동의항목에서 닉네임/프로필 사진/이메일 모두 "선택 동의"로 설정 필요
+        scopes: 'profile_nickname',
       },
     })
 

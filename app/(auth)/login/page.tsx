@@ -12,7 +12,7 @@ import { KakaoLoginButton } from '@/components/auth/KakaoLoginButton'
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: 'auth_error' }>
 }) {
   const { error } = await searchParams
 
