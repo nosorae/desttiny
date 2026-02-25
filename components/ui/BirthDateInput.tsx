@@ -15,13 +15,21 @@ export interface BirthDateValue {
   month: string
   day: string
   hour: string
+  minute: string
   /** 태어난 시간을 모르는 경우 true - 시주 계산 생략 */
   unknownTime: boolean
 }
 
 /** 빈 초기값 생성 */
 export function getEmptyBirthDate(): BirthDateValue {
-  return { year: '', month: '', day: '', hour: '', unknownTime: false }
+  return {
+    year: '',
+    month: '',
+    day: '',
+    hour: '',
+    minute: '',
+    unknownTime: false,
+  }
 }
 
 /**
@@ -39,12 +47,13 @@ export function toBirthDateString(value: BirthDateValue): string | null {
 }
 
 /**
- * HH:00 형식 문자열 변환 (DB 저장용)
+ * HH:MM 형식 문자열 변환 (DB 저장용)
  * 시간을 모르거나 비어있으면 null 반환
  */
 export function toBirthTimeString(value: BirthDateValue): string | null {
   if (value.unknownTime || !value.hour) return null
-  return `${value.hour.padStart(2, '0')}:00`
+  const mm = value.minute ? value.minute.padStart(2, '0') : '00'
+  return `${value.hour.padStart(2, '0')}:${mm}`
 }
 
 // ===== 미리보기 데이터 타입 =====
@@ -92,21 +101,21 @@ export function BirthDateInput({
           label="년"
           value={value.year}
           onChange={(v) => updateField('year', v)}
-          placeholder="1990"
+          placeholder="1998"
           maxLength={4}
         />
         <NumberField
           label="월"
           value={value.month}
           onChange={(v) => updateField('month', v)}
-          placeholder="1"
+          placeholder="5"
           maxLength={2}
         />
         <NumberField
           label="일"
           value={value.day}
           onChange={(v) => updateField('day', v)}
-          placeholder="1"
+          placeholder="29"
           maxLength={2}
         />
       </div>
@@ -118,7 +127,15 @@ export function BirthDateInput({
             label="시"
             value={value.hour}
             onChange={(v) => updateField('hour', v)}
-            placeholder="0"
+            placeholder="14"
+            maxLength={2}
+            disabled={value.unknownTime}
+          />
+          <NumberField
+            label="분"
+            value={value.minute}
+            onChange={(v) => updateField('minute', v)}
+            placeholder="30"
             maxLength={2}
             disabled={value.unknownTime}
           />

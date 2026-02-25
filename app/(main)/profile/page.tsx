@@ -13,10 +13,21 @@
 //   Server Component는 서버에서 실행되므로 DB에 직접 접근 가능
 // TODO(#29): 프로필 탭 UI 구현
 // TODO(#31): 프로필 카드 컴포넌트 & 3체계 요약 UI
+import Link from 'next/link'
+
 export default function ProfilePage() {
   return (
-    <main className="px-6 py-8">
+    <main className="px-6 py-8 space-y-6">
       <h1 className="text-xl font-bold text-destiny-text">프로필</h1>
+      <p className="text-sm text-destiny-text-muted">
+        프로필 상세 화면은 준비 중이에요.
+      </p>
+      <Link
+        href="/compatibility"
+        className="inline-block rounded-xl bg-destiny-primary px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        궁합 보러가기
+      </Link>
     </main>
   )
 }
