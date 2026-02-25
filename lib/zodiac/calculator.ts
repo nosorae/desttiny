@@ -12,17 +12,15 @@
  * 참고: Wikipedia Astrological sign - https://en.wikipedia.org/wiki/Astrological_sign
  */
 
+// zodiac-signs는 CJS 모듈 - types/zodiac-signs.d.ts에서 타입 선언
+// esModuleInterop: true이므로 default import 사용 가능
 import zodiacSignsFactory from 'zodiac-signs'
 
 import type { ZodiacSign, ZodiacId } from './types'
 import { ZODIAC_KO_NAMES, ZODIAC_EMOJI, ZODIAC_ELEMENT } from './types'
 
-// zodiac-signs는 CJS 팩토리 함수 → 언어 코드를 넘겨 인스턴스 생성
-const zodiacLib = (
-  zodiacSignsFactory as unknown as (lang: string) => {
-    getSignByDate: (opts: { month: number; day: number }) => { name: string }
-  }
-)('en')
+// 언어 코드를 넘겨 인스턴스 생성 (types/zodiac-signs.d.ts에 타입 선언됨)
+const zodiacLib = zodiacSignsFactory('en')
 
 /**
  * 생월/일로 서양 별자리를 계산합니다.
