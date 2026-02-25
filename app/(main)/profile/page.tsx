@@ -14,8 +14,26 @@
 // TODO(#29): 프로필 탭 UI 구현
 // TODO(#31): 프로필 카드 컴포넌트 & 3체계 요약 UI
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 
-export default function ProfilePage() {
+import { createClient } from '@/lib/supabase/server'
+
+export default async function ProfilePage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  // 프로필 미완성 시 온보딩으로 리다이렉트
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) redirect('/onboarding')
+
   return (
     <main className="px-6 py-8 space-y-6">
       <h1 className="text-xl font-bold text-destiny-text">프로필</h1>

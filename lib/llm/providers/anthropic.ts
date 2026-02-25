@@ -10,6 +10,7 @@
  *   3. 환경변수 LLM_PROVIDER={provider} 설정
  */
 import Anthropic from '@anthropic-ai/sdk'
+
 import type { LLMProvider } from '../types'
 
 export class AnthropicProvider implements LLMProvider {
@@ -28,7 +29,7 @@ export class AnthropicProvider implements LLMProvider {
   async generateText(prompt: string): Promise<string> {
     const message = await this.client.messages.create({
       model: this.model,
-      max_tokens: 2000,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     })
 
