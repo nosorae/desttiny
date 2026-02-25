@@ -114,8 +114,12 @@ export async function calculateCompatibilityPreview(
     gender: requesterProfile.gender ?? null,
   }
 
-  // 3. 파트너 PersonCompatibilityInput 구성
+  // 3. 파트너 입력값 검증 + PersonCompatibilityInput 구성
   const { partner } = input
+  const trimmedName = partner.name?.trim()
+  if (!trimmedName || trimmedName.length < 1 || trimmedName.length > 20)
+    return { success: false, error: '이름은 1~20자로 입력해주세요.' }
+
   const birthDate = new Date(partner.birthDate)
   if (isNaN(birthDate.getTime()))
     return { success: false, error: '생년월일이 올바르지 않습니다.' }
@@ -151,7 +155,7 @@ export async function calculateCompatibilityPreview(
     dayPillar: partnerDayPillar,
     zodiacId: partnerZodiacId,
     mbti: partnerMbti,
-    name: partner.name,
+    name: trimmedName,
     gender: partner.gender ?? null,
   }
 

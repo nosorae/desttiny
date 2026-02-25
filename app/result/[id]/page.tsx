@@ -40,7 +40,14 @@ export default async function ResultPage({ params }: Props) {
     .eq('id', id)
     .single()
 
-  if (error || !result) notFound()
+  // PGRST116: single row 조회 실패 (RLS 필터링 포함)
+  // 그 외 DB 에러는 서버 에러로 분리하여 500 페이지 표시
+  if (error) {
+    if (error.code === 'PGRST116') notFound()
+    console.error('[ResultPage] DB 조회 실패:', error)
+    throw new Error('결과를 불러오는데 실패했습니다.')
+  }
+  if (!result) notFound()
 
   // ai_summary는 JSON 문자열로 저장됨
   let analysis: CompatibilityAnalysis | null = null
@@ -80,13 +87,12 @@ export default async function ResultPage({ params }: Props) {
       />
 
       {/* 영역별 해설 */}
-      {analysis?.sections.map((section, i) => (
+      {analysis?.sections.map((section) => (
         <AnalysisSection
           key={section.area}
           title={section.title}
           content={section.content}
           area={section.area}
-          index={i}
         />
       ))}
 

@@ -6,7 +6,6 @@ interface AnalysisSectionProps {
   title: string
   content: string
   area: string
-  index: number
 }
 
 const AREA_EMOJI: Record<string, string> = {

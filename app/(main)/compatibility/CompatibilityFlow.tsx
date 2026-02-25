@@ -68,7 +68,8 @@ export default function CompatibilityFlow() {
 
   // 3. 전체 리포트 보기 → LLM API 호출
   const handleViewFull = useCallback(async () => {
-    if (!relationshipType || !partnerData) return
+    // 이중 제출 방지: 이미 로딩 중이면 무시
+    if (!relationshipType || !partnerData || flowStep === 'loading') return
 
     setFlowStep('loading')
 
@@ -106,7 +107,7 @@ export default function CompatibilityFlow() {
       setError('네트워크 오류가 발생했어요.')
       setFlowStep('teaser')
     }
-  }, [relationshipType, partnerData, router])
+  }, [relationshipType, partnerData, flowStep, router])
 
   // 뒤로가기
   const handleBack = useCallback(() => {
