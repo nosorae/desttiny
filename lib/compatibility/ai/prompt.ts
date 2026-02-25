@@ -76,6 +76,9 @@ export function buildCompatibilityPrompt(
     '가치관(values): 삶의 방향성, 우선순위',
     '생활습관(lifestyle): 일상 패턴, 취향',
     '갈등 해결(conflict): 갈등 처리 방식',
+    '성장과 발전(growth): 함께 성장하는 가능성',
+    '신뢰와 안정감(trust): 서로에 대한 믿음과 의지',
+    '재미와 유머(fun): 함께하는 즐거움, 유머 코드',
   ]
   if (isIntimate) areas.push('친밀도(intimacy): 신체적·정서적 친밀감 표현 방식')
 
@@ -86,15 +89,14 @@ export function buildCompatibilityPrompt(
   // 연인계 관계에서만 29금 친밀도 점수 3종을 LLM이 생성
   // SSOT 궁합 결과 템플릿 v1 기준: 텐션/리듬/경계선 대화
   const intimacyScoresSection = isIntimate
-    ? `,
-  "intimacyScores": {
+    ? `"intimacyScores": {
     "tension": 0,
     "rhythm": 0,
     "boundary": 0,
     "strength": "강점 한 줄",
     "caution": "주의점 한 줄",
     "advice": "권장 대화 한 줄"
-  }`
+  },\n  `
     : ''
 
   const intimacyScoresInstruction = isIntimate
@@ -136,8 +138,11 @@ ${areas.join('\n')}
     { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "emotion" },
     { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "values" },
     { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "lifestyle" },
-    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "conflict" }${intimacySection}
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "conflict" },
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "growth" },
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "trust" },
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "fun" }${intimacySection}
   ],
-  "finalSummary": "마무리 정리 (공백 포함 450~550자, 약 500자)"${intimacyScoresSection}
+  ${intimacyScoresSection}"finalSummary": "마무리 정리 (공백 포함 450~550자, 약 500자)"
 }`
 }

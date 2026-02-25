@@ -51,6 +51,9 @@ export interface CompatibilitySection {
     | 'values' // 가치관
     | 'lifestyle' // 생활습관
     | 'conflict' // 갈등 해결
+    | 'growth' // 성장과 발전
+    | 'trust' // 신뢰와 안정감
+    | 'fun' // 재미와 유머
     | 'intimacy' // 친밀도 (연인/썸/전연인만)
 }
 
@@ -79,10 +82,10 @@ export interface CompatibilityAnalysis {
   summary: string
   /** 영역별 해설 섹션 */
   sections: CompatibilitySection[]
-  /** 마무리 정리 */
-  finalSummary: string
   /** 29금 친밀도 점수 - 연인/썸/전연인만 (비연인 관계에서는 undefined) */
   intimacyScores?: IntimacyScores
+  /** 마무리 정리 (29금 다음에 위치) */
+  finalSummary: string
 }
 
 /** 계산기에 전달하는 1인 궁합 입력 데이터 */

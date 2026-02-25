@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
 import type { LLMProvider } from '../../llm/types'
 import type { PersonCompatibilityInput } from '../types'
 
@@ -15,6 +16,9 @@ const mockProvider: LLMProvider = {
         { title: '가치관', content: '내용', area: 'values' },
         { title: '생활', content: '내용', area: 'lifestyle' },
         { title: '갈등', content: '내용', area: 'conflict' },
+        { title: '성장', content: '내용', area: 'growth' },
+        { title: '신뢰', content: '내용', area: 'trust' },
+        { title: '재미', content: '내용', area: 'fun' },
       ],
       finalSummary: '테스트 마무리',
     })
@@ -24,8 +28,11 @@ const mockProvider: LLMProvider = {
 import { calculateCompatibility } from '../calculator'
 
 function makePerson(
-  stem: string, branch: string, element: string,
-  zodiacId: string, mbti: string | null = null
+  stem: string,
+  branch: string,
+  element: string,
+  zodiacId: string,
+  mbti: string | null = null
 ): PersonCompatibilityInput {
   return {
     dayPillar: {
@@ -50,7 +57,8 @@ describe('calculateCompatibility - 3체계 통합', () => {
     const result = await calculateCompatibility(
       makePerson('갑', '인', 'wood', 'aries', 'INTJ'),
       makePerson('병', '오', 'fire', 'leo', 'ENFP'),
-      'friend', mockProvider
+      'friend',
+      mockProvider
     )
     expect(result.totalScore).toBeGreaterThanOrEqual(0)
     expect(result.totalScore).toBeLessThanOrEqual(100)
@@ -60,7 +68,8 @@ describe('calculateCompatibility - 3체계 통합', () => {
     const result = await calculateCompatibility(
       makePerson('갑', '인', 'wood', 'aries', 'INTJ'),
       makePerson('병', '오', 'fire', 'leo', 'ENFP'),
-      'friend', mockProvider
+      'friend',
+      mockProvider
     )
     expect(result.breakdown.saju.score).toBeGreaterThanOrEqual(0)
     expect(result.breakdown.zodiac.score).toBeGreaterThanOrEqual(0)
@@ -71,12 +80,13 @@ describe('calculateCompatibility - 3체계 통합', () => {
     const result = await calculateCompatibility(
       makePerson('갑', '인', 'wood', 'aries', 'INTJ'),
       makePerson('병', '오', 'fire', 'leo', 'ENFP'),
-      'friend', mockProvider
+      'friend',
+      mockProvider
     )
     const expected = Math.round(
       result.breakdown.saju.score * 0.4 +
-      result.breakdown.zodiac.score * 0.3 +
-      result.breakdown.mbti.score * 0.3
+        result.breakdown.zodiac.score * 0.3 +
+        result.breakdown.mbti.score * 0.3
     )
     expect(result.totalScore).toBe(expected)
   })
@@ -85,16 +95,24 @@ describe('calculateCompatibility - 3체계 통합', () => {
     const result = await calculateCompatibility(
       makePerson('갑', '인', 'wood', 'aries', null),
       makePerson('병', '오', 'fire', 'leo', null),
-      'friend', mockProvider
+      'friend',
+      mockProvider
     )
     expect(result.totalScore).toBeGreaterThanOrEqual(0)
   })
 
   it('dayPillar null이면 사주 점수 기본값 50을 사용한다', async () => {
     const result = await calculateCompatibility(
-      { dayPillar: null, zodiacId: 'aries', mbti: 'INTJ', name: '테스트', gender: null },
+      {
+        dayPillar: null,
+        zodiacId: 'aries',
+        mbti: 'INTJ',
+        name: '테스트',
+        gender: null,
+      },
       makePerson('병', '오', 'fire', 'leo', 'ENFP'),
-      'friend', mockProvider
+      'friend',
+      mockProvider
     )
     expect(result.breakdown.saju.score).toBe(50)
   })
@@ -103,7 +121,8 @@ describe('calculateCompatibility - 3체계 통합', () => {
     const result = await calculateCompatibility(
       makePerson('갑', '인', 'wood', 'aries', 'INTJ'),
       makePerson('병', '오', 'fire', 'leo', 'ENFP'),
-      'lover', mockProvider
+      'lover',
+      mockProvider
     )
     expect(result.analysis.summary).toBeTruthy()
     expect(Array.isArray(result.analysis.sections)).toBe(true)
@@ -119,7 +138,8 @@ describe('calculateCompatibility - 3체계 통합', () => {
     const result = await calculateCompatibility(
       makePerson('갑', '인', 'wood', 'aries', 'INTJ'),
       makePerson('병', '오', 'fire', 'leo', 'ENFP'),
-      'friend', badProvider
+      'friend',
+      badProvider
     )
     expect(result.analysis.summary).toBeTruthy()
     expect(result.totalScore).toBeGreaterThanOrEqual(0)
@@ -135,9 +155,11 @@ describe('calculateCompatibility - LLM 프롬프트 검증', () => {
     await calculateCompatibility(
       makePerson('갑', '인', 'wood', 'aries', 'INTJ'),
       makePerson('병', '오', 'fire', 'leo', 'ENFP'),
-      'friend', mockProvider
+      'friend',
+      mockProvider
     )
-    const calledPrompt = (mockProvider.generateText as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
+    const calledPrompt = (mockProvider.generateText as ReturnType<typeof vi.fn>)
+      .mock.calls[0][0] as string
     expect(calledPrompt).toContain('3체계 계산 결과')
   })
 })
