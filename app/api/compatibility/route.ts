@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createLLMProvider } from '@/lib/llm/factory'
 import { calculateCompatibility } from '@/lib/compatibility/calculator'
 import { parseDayPillar, getSajuProfile } from '@/lib/saju'
@@ -73,11 +74,17 @@ interface RequestBody {
 /**
  * YYYY-MM-DD 문자열을 Date 객체로 변환
  * new Date('YYYY-MM-DD')는 UTC 자정으로 파싱되므로 UTC getter로 일관되게 사용
+ * 범위: 1900년 ~ 현재 연도 (사주 계산 라이브러리가 1900년 기준)
  */
 function parseBirthDate(dateStr: string): Date {
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) {
     throw new Error(`유효하지 않은 날짜 형식: "${dateStr}"`)
+  }
+  const year = date.getUTCFullYear()
+  const currentYear = new Date().getUTCFullYear()
+  if (year < 1900 || year > currentYear) {
+    throw new Error(`생년월일 범위가 올바르지 않습니다: ${year}년 (1900~${currentYear}년만 허용)`)
   }
   return date
 }
@@ -175,9 +182,28 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // 옵션 A: partnerId UUID 형식 검증 (Supabase에서 UUID 타입 오류 전에 명확한 400 반환)
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (partner.partnerId && !UUID_REGEX.test(partner.partnerId)) {
+    return NextResponse.json(
+      { error: '유효하지 않은 파트너 ID 형식입니다.' },
+      { status: 400 }
+    )
+  }
+
+  // 자기 자신과의 궁합 방지 (슬롯 낭비 + 의미 없는 결과)
+  if (partner.partnerId && partner.partnerId === user.id) {
+    return NextResponse.json(
+      { error: '자기 자신과의 궁합은 계산할 수 없습니다.' },
+      { status: 400 }
+    )
+  }
+
   // 옵션 A/B 중 하나는 반드시 있어야 함
+  // 이름은 공백 제거 후 비어 있으면 미입력으로 처리
+  const trimmedPartnerName = partner.name?.trim()
   const isPartnerById = !!partner.partnerId
-  const isDirectInput = !!partner.name && !!partner.birthDate
+  const isDirectInput = !!trimmedPartnerName && !!partner.birthDate
 
   if (!isPartnerById && !isDirectInput) {
     return NextResponse.json(
@@ -187,7 +213,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 파트너 이름 길이 검증 (LLM 프롬프트 토큰 비용 및 악용 방지)
-  if (partner.name && partner.name.length > 50) {
+  if (trimmedPartnerName && trimmedPartnerName.length > 50) {
     return NextResponse.json({ error: '파트너 이름은 50자 이내로 입력해주세요.' }, { status: 400 })
   }
 
@@ -259,7 +285,10 @@ export async function POST(request: NextRequest) {
 
   if (isPartnerById) {
     // 옵션 A: 등록된 사용자 조회
-    const { data: partnerProfile, error: partnerError } = await supabase
+    // RLS는 자신의 row만 SELECT 허용하므로 admin 클라이언트로 우회
+    // (user-scope 클라이언트로 조회하면 다른 유저의 row는 null 반환됨)
+    const adminClient = createAdminClient()
+    const { data: partnerProfile, error: partnerError } = await adminClient
       .from('profiles')
       .select('id, day_pillar, zodiac_sign, mbti, nickname, gender')
       .eq('id', partner.partnerId!)
@@ -314,7 +343,7 @@ export async function POST(request: NextRequest) {
     let birthDate: Date
     try {
       birthDate = parseBirthDate(partner.birthDate!)
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: `생년월일 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해주세요.` },
         { status: 400 }
@@ -352,11 +381,11 @@ export async function POST(request: NextRequest) {
       dayPillar: partnerDayPillar,
       zodiacId: partnerZodiacId,
       mbti: partnerMbti,
-      name: partner.name!,
+      name: trimmedPartnerName!,
       gender: partnerGender,
     }
 
-    partnerNameForDb = partner.name!
+    partnerNameForDb = trimmedPartnerName!
     partnerBirthDateForDb = partner.birthDate!
     partnerBirthTimeForDb = partner.birthTime ?? null
     partnerDayPillarForDb = partnerDayPillar?.label ?? null
@@ -368,6 +397,14 @@ export async function POST(request: NextRequest) {
   // ===== 5. 무료 슬롯 원자적 사용 =====
   // use_daily_slot()는 SECURITY DEFINER 함수로 RLS 우회 + race condition 방지
   // (SELECT + UPDATE를 분리하면 동시 요청 시 중복 소진 가능)
+  //
+  // 설계 트레이드오프: LLM 계산 이전에 슬롯을 소진함
+  //   - 이유: 계산 후 소진하면 악의적 재시도로 슬롯 미소진 가능 (abuse 방지 우선)
+  //   - 결과: 인프라 오류(LLM 실패 등)로 계산이 실패해도 슬롯이 소진됨 (사용자 불이익)
+  //   - TODO(MVP 이후): LLM 실패 시 슬롯 복구(롤백) 로직 추가 검토
+  //
+  // TODO(MVP 이후): 하루에 1인이 최대 N번만 사용 가능한 유저별 제한 추가
+  //   현재는 1명이 하루 슬롯 전체를 독점 소진할 수 있음 → Vercel KV 또는 DB row 기반 카운터 검토
   const today = new Date().toISOString().slice(0, 10) // UTC 기준 (Vercel 서버 환경)
   const { data: slotUsed, error: slotError } = await supabase.rpc('use_daily_slot', {
     p_slot_date: today,
@@ -454,18 +491,22 @@ export async function POST(request: NextRequest) {
   }
 
   // ===== 9. 응답 반환 =====
-  // TODO: production 배포 전 debug 필드 제거 또는 NODE_ENV !== 'production' 조건 추가
-  //   debug 필드에는 LLM 프롬프트 전문과 raw 응답이 포함되어 내부 시스템 설계가 노출될 수 있음
+  // debug 필드: 개발/스테이징 환경에서만 포함 (프롬프트 전문, LLM raw 응답 노출 방지)
+  const debugInfo =
+    process.env.NODE_ENV !== 'production'
+      ? {
+          provider: realProvider.name,
+          model: realProvider.model,
+          prompt: debugPrompt,
+          rawLLMResponse: debugRawResponse,
+        }
+      : undefined
+
   return NextResponse.json({
     id: savedId,
     totalScore: result.totalScore,
     breakdown: result.breakdown,
     analysis: result.analysis,
-    debug: {
-      provider: realProvider.name,
-      model: realProvider.model,
-      prompt: debugPrompt,
-      rawLLMResponse: debugRawResponse,
-    },
+    ...(debugInfo !== undefined && { debug: debugInfo }),
   })
 }

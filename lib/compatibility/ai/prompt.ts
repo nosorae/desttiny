@@ -63,7 +63,7 @@ export function buildCompatibilityPrompt(data: CompatibilityPromptInput): string
   if (isIntimate) areas.push('친밀도(intimacy): 신체적·정서적 친밀감 표현 방식')
 
   const intimacySection = isIntimate
-    ? ',\n    { "title": "후킹 제목", "content": "상세 해설 (200-300자)", "area": "intimacy" }'
+    ? ',\n    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "intimacy" }'
     : ''
 
   return `당신은 사주·별자리·MBTI 통합 궁합 전문가입니다.
@@ -81,8 +81,9 @@ ${breakdownSection}
 [작성 원칙]
 1. 위의 3체계 계산 결과를 바탕으로 통합적으로 해석하세요
 2. 각 영역 제목은 후킹형으로 작성하세요 (예: "둘이 싸우면 누가 이길까?")
-3. 본문은 구체적이고 실용적인 조언을 포함하세요 (200-300자)
-4. 한국어로 작성하세요
+3. 본문은 구체적이고 실용적인 조언을 포함하세요 (공백 포함 450~550자, 약 500자)
+4. 마무리 정리는 전체 관계를 종합적으로 정리하세요 (공백 포함 450~550자, 약 500자)
+5. 한국어로 작성하세요
 
 [분석 영역]
 ${areas.join('\n')}
@@ -91,12 +92,12 @@ ${areas.join('\n')}
 {
   "summary": "한 줄 요약 (50자 이내)",
   "sections": [
-    { "title": "후킹 제목", "content": "상세 해설 (200-300자)", "area": "communication" },
-    { "title": "후킹 제목", "content": "상세 해설 (200-300자)", "area": "emotion" },
-    { "title": "후킹 제목", "content": "상세 해설 (200-300자)", "area": "values" },
-    { "title": "후킹 제목", "content": "상세 해설 (200-300자)", "area": "lifestyle" },
-    { "title": "후킹 제목", "content": "상세 해설 (200-300자)", "area": "conflict" }${intimacySection}
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "communication" },
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "emotion" },
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "values" },
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "lifestyle" },
+    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "conflict" }${intimacySection}
   ],
-  "finalSummary": "마무리 정리 (100자 이내)"
+  "finalSummary": "마무리 정리 (공백 포함 450~550자, 약 500자)"
 }`
 }

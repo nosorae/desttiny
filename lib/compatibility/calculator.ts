@@ -67,20 +67,16 @@ export async function calculateCompatibility(
   relationshipType: RelationshipType,
   provider: LLMProvider
 ): Promise<CompatibilityResult> {
-  // 1. 3체계 점수 병렬 계산 (독립적이므로 Promise.all - 순차 실행 대비 3배 빠름)
-  const [sajuScore, zodiacScore, mbtiScore] = await Promise.all([
-    Promise.resolve(
-      person1.dayPillar && person2.dayPillar
-        ? calculateSajuCompatibility(person1.dayPillar, person2.dayPillar)
-        : DEFAULT_SAJU_SCORE
-    ),
-    Promise.resolve(
-      person1.zodiacId && person2.zodiacId
-        ? calculateZodiacCompatibility(person1.zodiacId, person2.zodiacId)
-        : DEFAULT_ZODIAC_SCORE
-    ),
-    Promise.resolve(calculateMbtiCompatibility(person1.mbti, person2.mbti)),
-  ])
+  // 1. 3체계 점수 계산 (모두 동기 함수 - LLM 호출 전 미리 계산)
+  const sajuScore =
+    person1.dayPillar && person2.dayPillar
+      ? calculateSajuCompatibility(person1.dayPillar, person2.dayPillar)
+      : DEFAULT_SAJU_SCORE
+  const zodiacScore =
+    person1.zodiacId && person2.zodiacId
+      ? calculateZodiacCompatibility(person1.zodiacId, person2.zodiacId)
+      : DEFAULT_ZODIAC_SCORE
+  const mbtiScore = calculateMbtiCompatibility(person1.mbti, person2.mbti)
 
   // 2. 가중 평균 (사주 40% + 별자리 30% + MBTI 30%)
   const totalScore = Math.round(
@@ -98,9 +94,27 @@ export async function calculateCompatibility(
   let analysis: CompatibilityAnalysis
   try {
     const rawText = await provider.generateText(prompt)
-    analysis = JSON.parse(rawText) as CompatibilityAnalysis
+
+    // Claude는 JSON 요청 시에도 ```json ... ``` 코드 펜스로 감싸는 경우가 있어 제거
+    const stripped = rawText
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim()
+
+    const parsed = JSON.parse(stripped)
+
+    // 형식 검증: 필수 필드 타입 체크 (as 캐스팅만으로는 런타임 보장 없음)
+    if (
+      typeof parsed.summary !== 'string' ||
+      !Array.isArray(parsed.sections) ||
+      typeof parsed.finalSummary !== 'string'
+    ) {
+      throw new Error('LLM 응답이 예상 형식이 아님 (summary/sections/finalSummary 누락)')
+    }
+
+    analysis = parsed as CompatibilityAnalysis
   } catch (error) {
-    // LLM 호출 실패 또는 JSON 파싱 실패 시 폴백
+    // LLM 호출 실패 또는 JSON 파싱/형식 검증 실패 시 폴백
     console.error('[calculateCompatibility] LLM 실패, 폴백 사용:', error)
     analysis = getFallbackAnalysis(totalScore)
   }
