@@ -11,18 +11,32 @@
 //   4. 오류 → /login?error=auth_error
 //
 // 참고: https://supabase.com/docs/guides/auth/server-side/nextjs
-import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// 허용된 origin만 사용 - 호스트 헤더 인젝션으로 인한 open redirect 방지
-const ALLOWED_ORIGIN = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? process.env.NEXT_PUBLIC_SITE_URL ?? null
-  : null
+import { createClient } from '@/lib/supabase/server'
+
+// 허용된 origin 목록 - 호스트 헤더 인젝션으로 인한 open redirect 방지
+// NEXT_PUBLIC_SITE_URL: 프로덕션 도메인 (예: https://desttiny.vercel.app)
+// VERCEL_URL: Vercel이 프리뷰 배포마다 자동 설정하는 도메인 (서버 전용 env var)
+const ALLOWED_ORIGINS: string[] = []
+if (process.env.NEXT_PUBLIC_SITE_URL) {
+  ALLOWED_ORIGINS.push(process.env.NEXT_PUBLIC_SITE_URL)
+}
+if (process.env.VERCEL_URL) {
+  ALLOWED_ORIGINS.push(`https://${process.env.VERCEL_URL}`)
+}
 
 function getSafeOrigin(requestUrl: string): string {
-  if (ALLOWED_ORIGIN) return ALLOWED_ORIGIN
-  // NEXT_PUBLIC_SITE_URL 미설정 시 request.url에서 추출 (개발 환경)
-  return new URL(requestUrl).origin
+  const requestOrigin = new URL(requestUrl).origin
+
+  // 프로덕션 또는 Vercel 프리뷰 도메인이면 해당 origin 사용
+  if (ALLOWED_ORIGINS.includes(requestOrigin)) return requestOrigin
+
+  // 로컬 개발 환경 (localhost)
+  if (requestOrigin.startsWith('http://localhost')) return requestOrigin
+
+  // Fallback: 프로덕션 도메인 또는 요청 origin
+  return ALLOWED_ORIGINS[0] ?? requestOrigin
 }
 
 export async function GET(request: Request) {
@@ -35,11 +49,15 @@ export async function GET(request: Request) {
       const supabase = await createClient()
 
       // code를 실제 세션(JWT)으로 교환 - Android의 OAuthToken 수령과 유사
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+      const { error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code)
 
       if (!exchangeError) {
         // 세션 교환 성공 - 프로필 존재 여부로 신규/기존 사용자 판단
-        const { data: { user }, error: getUserError } = await supabase.auth.getUser()
+        const {
+          data: { user },
+          error: getUserError,
+        } = await supabase.auth.getUser()
 
         if (getUserError || !user) {
           console.error('[auth/callback] getUser 실패:', getUserError)
