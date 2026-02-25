@@ -1,22 +1,22 @@
-// 궁합 결과 상세 페이지 (Server Component)
+// 궁합 결과 상세 리포트 (Server Component)
 // 동적 라우트: /result/{궁합결과_id}
 //
-// 표시 내용:
-//   - 종합 궁합 점수 (3체계 가중평균)
-//   - 영역별 점수: 사주 궁합 / 별자리 궁합 / MBTI 궁합
-//   - Claude API가 생성한 자연어 해설 (두 사람의 관계 분석 리포트)
-//
-// 접근 조건: 결제 완료된 리포트만 전체 내용 열람 가능
-//   미결제 시 /result/[id]에 접근해도 티저(점수만)만 표시
-//
-// 데이터 흐름: Server Component에서 Supabase compatibility_results 테이블 조회
-//   → 결제 여부 확인 → 전체 리포트 or 티저 분기 렌더링
+// Server Component에서 DB 조회 → 전체 리포트 렌더링
+// RLS가 requester_id = auth.uid()인 결과만 반환하므로
+// 다른 사용자의 결과 접근 시 자동으로 notFound 처리
 //
 // Next.js 15+ 변경: params가 Promise 타입으로 변경됨
-// 이유: 동적 라우트의 매개변수를 비동기로 처리하여 서버 렌더링 최적화
-// (Android의 Intent extras를 suspend 함수로 받는 것과 유사한 개념)
 // 참고: https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
-// TODO(#21): 궁합 결과 리포트 UI 구현
+import { notFound, redirect } from 'next/navigation'
+
+import AnalysisSection from '@/components/result/AnalysisSection'
+import FinalSummary from '@/components/result/FinalSummary'
+import IntimacySection from '@/components/result/IntimacySection'
+import ScoreDisplay from '@/components/result/ScoreDisplay'
+import SummaryHeader from '@/components/result/SummaryHeader'
+import type { CompatibilityAnalysis } from '@/lib/compatibility/types'
+import { createClient } from '@/lib/supabase/server'
+
 type Props = {
   params: Promise<{ id: string }>
 }
@@ -24,10 +24,81 @@ type Props = {
 export default async function ResultPage({ params }: Props) {
   const { id } = await params
 
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  // RLS가 requester_id = auth.uid()인 결과만 반환하므로
+  // 다른 사용자의 결과는 자동으로 null 반환 → notFound
+  const { data: result, error } = await supabase
+    .from('compatibility_results')
+    .select(
+      '*, requester:profiles!compatibility_results_requester_id_fkey(nickname)'
+    )
+    .eq('id', id)
+    .single()
+
+  if (error || !result) notFound()
+
+  // ai_summary는 JSON 문자열로 저장됨
+  let analysis: CompatibilityAnalysis | null = null
+  try {
+    if (result.ai_summary) {
+      analysis = JSON.parse(result.ai_summary) as CompatibilityAnalysis
+    }
+  } catch {
+    console.error('[ResultPage] ai_summary 파싱 실패')
+  }
+
+  const requesterName =
+    (result.requester as { nickname: string | null } | null)?.nickname ?? '나'
+  const partnerName = result.partner_name ?? '파트너'
+
   return (
-    <main className="px-6 py-8">
-      <h1 className="text-xl font-bold text-destiny-text">궁합 결과</h1>
-      <p className="text-destiny-text-muted text-sm mt-2">ID: {id}</p>
+    <main className="px-6 py-8 space-y-6 pb-20">
+      {/* 요약 헤더 */}
+      <SummaryHeader
+        summary={
+          analysis?.summary ??
+          `두 분의 궁합 점수는 ${result.total_score}점입니다.`
+        }
+        requesterName={requesterName}
+        partnerName={partnerName}
+        relationshipType={result.relationship_type}
+      />
+
+      {/* 종합 점수 */}
+      <ScoreDisplay
+        totalScore={result.total_score}
+        breakdown={{
+          saju: result.saju_score ?? 50,
+          zodiac: result.zodiac_score ?? 50,
+          mbti: result.mbti_score ?? 50,
+        }}
+      />
+
+      {/* 영역별 해설 */}
+      {analysis?.sections.map((section, i) => (
+        <AnalysisSection
+          key={section.area}
+          title={section.title}
+          content={section.content}
+          area={section.area}
+          index={i}
+        />
+      ))}
+
+      {/* 29금 친밀도 (연인계만, 순서: sections 다음, finalSummary 이전) */}
+      {analysis?.intimacyScores && (
+        <IntimacySection scores={analysis.intimacyScores} />
+      )}
+
+      {/* 마무리 */}
+      {analysis?.finalSummary && (
+        <FinalSummary content={analysis.finalSummary} />
+      )}
     </main>
   )
 }
