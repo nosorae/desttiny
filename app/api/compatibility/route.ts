@@ -12,21 +12,21 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { createLLMProvider } from '@/lib/llm/factory'
 import { calculateCompatibility } from '@/lib/compatibility/calculator'
-import { parseDayPillar, getSajuProfile } from '@/lib/saju'
-import { getZodiacSign } from '@/lib/zodiac/calculator'
-import type { LLMProvider } from '@/lib/llm/types'
 import type {
   RelationshipType,
   MbtiType,
   PersonCompatibilityInput,
   CompatibilityResult,
 } from '@/lib/compatibility/types'
-import type { ZodiacId } from '@/lib/zodiac/types'
+import { createLLMProvider } from '@/lib/llm/factory'
+import type { LLMProvider } from '@/lib/llm/types'
+import { parseDayPillar, getSajuProfile } from '@/lib/saju'
 import type { Pillar } from '@/lib/saju/types'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { getZodiacSign } from '@/lib/zodiac/calculator'
+import type { ZodiacId } from '@/lib/zodiac/types'
 
 // ===== 유효값 상수 =====
 
@@ -37,18 +37,41 @@ const VALID_RELATIONSHIP_TYPES: RelationshipType[] = [
   'friend',
   'colleague',
   'family',
+  'idol',
 ]
 
 const VALID_MBTI_TYPES: MbtiType[] = [
-  'INTJ', 'INTP', 'ENTJ', 'ENTP',
-  'INFJ', 'INFP', 'ENFJ', 'ENFP',
-  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-  'ISTP', 'ISFP', 'ESTP', 'ESFP',
+  'INTJ',
+  'INTP',
+  'ENTJ',
+  'ENTP',
+  'INFJ',
+  'INFP',
+  'ENFJ',
+  'ENFP',
+  'ISTJ',
+  'ISFJ',
+  'ESTJ',
+  'ESFJ',
+  'ISTP',
+  'ISFP',
+  'ESTP',
+  'ESFP',
 ]
 
 const VALID_ZODIAC_IDS: ZodiacId[] = [
-  'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
-  'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
+  'aries',
+  'taurus',
+  'gemini',
+  'cancer',
+  'leo',
+  'virgo',
+  'libra',
+  'scorpio',
+  'sagittarius',
+  'capricorn',
+  'aquarius',
+  'pisces',
 ]
 
 // ===== 요청 바디 타입 =====
@@ -58,8 +81,8 @@ interface PartnerInput {
   partnerId?: string
   // 옵션 B: 직접 입력
   name?: string
-  birthDate?: string   // YYYY-MM-DD
-  birthTime?: string   // HH:MM (optional)
+  birthDate?: string // YYYY-MM-DD
+  birthTime?: string // HH:MM (optional)
   mbti?: string
   gender?: string
 }
@@ -84,7 +107,9 @@ function parseBirthDate(dateStr: string): Date {
   const year = date.getUTCFullYear()
   const currentYear = new Date().getUTCFullYear()
   if (year < 1900 || year > currentYear) {
-    throw new Error(`생년월일 범위가 올바르지 않습니다: ${year}년 (1900~${currentYear}년만 허용)`)
+    throw new Error(
+      `생년월일 범위가 올바르지 않습니다: ${year}년 (1900~${currentYear}년만 허용)`
+    )
   }
   return date
 }
@@ -147,10 +172,7 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return NextResponse.json(
-      { error: '로그인이 필요합니다.' },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
   }
 
   // ===== 2. 요청 바디 파싱 및 유효성 검사 =====
@@ -166,7 +188,10 @@ export async function POST(request: NextRequest) {
 
   const { relationshipType, partner } = body
 
-  if (!relationshipType || !VALID_RELATIONSHIP_TYPES.includes(relationshipType as RelationshipType)) {
+  if (
+    !relationshipType ||
+    !VALID_RELATIONSHIP_TYPES.includes(relationshipType as RelationshipType)
+  ) {
     return NextResponse.json(
       {
         error: `유효하지 않은 관계 유형입니다. 가능한 값: ${VALID_RELATIONSHIP_TYPES.join(', ')}`,
@@ -183,7 +208,8 @@ export async function POST(request: NextRequest) {
   }
 
   // 옵션 A: partnerId UUID 형식 검증 (Supabase에서 UUID 타입 오류 전에 명확한 400 반환)
-  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const UUID_REGEX =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   if (partner.partnerId && !UUID_REGEX.test(partner.partnerId)) {
     return NextResponse.json(
       { error: '유효하지 않은 파트너 ID 형식입니다.' },
@@ -207,14 +233,20 @@ export async function POST(request: NextRequest) {
 
   if (!isPartnerById && !isDirectInput) {
     return NextResponse.json(
-      { error: '파트너 정보를 입력해주세요. partnerId 또는 name + birthDate가 필요합니다.' },
+      {
+        error:
+          '파트너 정보를 입력해주세요. partnerId 또는 name + birthDate가 필요합니다.',
+      },
       { status: 400 }
     )
   }
 
   // 파트너 이름 길이 검증 (LLM 프롬프트 토큰 비용 및 악용 방지)
   if (trimmedPartnerName && trimmedPartnerName.length > 50) {
-    return NextResponse.json({ error: '파트너 이름은 50자 이내로 입력해주세요.' }, { status: 400 })
+    return NextResponse.json(
+      { error: '파트너 이름은 50자 이내로 입력해주세요.' },
+      { status: 400 }
+    )
   }
 
   // MBTI 유효성 검사 (있는 경우)
@@ -345,7 +377,9 @@ export async function POST(request: NextRequest) {
       birthDate = parseBirthDate(partner.birthDate!)
     } catch {
       return NextResponse.json(
-        { error: `생년월일 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해주세요.` },
+        {
+          error: `생년월일 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해주세요.`,
+        },
         { status: 400 }
       )
     }
@@ -355,7 +389,10 @@ export async function POST(request: NextRequest) {
     if (partner.birthTime) {
       const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/
       if (!TIME_REGEX.test(partner.birthTime)) {
-        return NextResponse.json({ error: '시간 형식이 올바르지 않습니다 (HH:MM)' }, { status: 400 })
+        return NextResponse.json(
+          { error: '시간 형식이 올바르지 않습니다 (HH:MM)' },
+          { status: 400 }
+        )
       }
     }
     const birthHour = parseBirthHour(partner.birthTime)
@@ -373,9 +410,10 @@ export async function POST(request: NextRequest) {
 
     // Fix 1: partner.gender가 'male' 또는 'female'이 아닌 경우 null로 처리
     // gender는 선택 필드이므로 잘못된 값은 조용히 null로 변환 (사용자 경험 우선)
-    const partnerGender = partner.gender === 'male' || partner.gender === 'female'
-      ? partner.gender
-      : null
+    const partnerGender =
+      partner.gender === 'male' || partner.gender === 'female'
+        ? partner.gender
+        : null
 
     person2 = {
       dayPillar: partnerDayPillar,
@@ -390,7 +428,7 @@ export async function POST(request: NextRequest) {
     partnerBirthTimeForDb = partner.birthTime ?? null
     partnerDayPillarForDb = partnerDayPillar?.label ?? null
     partnerZodiacSignForDb = partnerZodiacId
-    partnerMbtiForDb = partnerMbti  // validated 값 사용 (partner.mbti는 원시 입력이므로 직접 저장하면 DB 제약 위반 가능)
+    partnerMbtiForDb = partnerMbti // validated 값 사용 (partner.mbti는 원시 입력이므로 직접 저장하면 DB 제약 위반 가능)
     partnerGenderForDb = partnerGender
   }
 
@@ -406,14 +444,20 @@ export async function POST(request: NextRequest) {
   // TODO(MVP 이후): 하루에 1인이 최대 N번만 사용 가능한 유저별 제한 추가
   //   현재는 1명이 하루 슬롯 전체를 독점 소진할 수 있음 → Vercel KV 또는 DB row 기반 카운터 검토
   const today = new Date().toISOString().slice(0, 10) // UTC 기준 (Vercel 서버 환경)
-  const { data: slotUsed, error: slotError } = await supabase.rpc('use_daily_slot', {
-    p_slot_date: today,
-  })
+  const { data: slotUsed, error: slotError } = await supabase.rpc(
+    'use_daily_slot',
+    {
+      p_slot_date: today,
+    }
+  )
 
   if (slotError) {
     // RPC 오류는 서버 에러 (슬롯 소진과 구분하여 클라이언트가 잘못 결제 시도하지 않도록)
     console.error('[POST /api/compatibility] 슬롯 RPC 오류:', slotError)
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json(
+      { error: '서버 오류가 발생했습니다.' },
+      { status: 500 }
+    )
   }
 
   if (!slotUsed) {
@@ -453,7 +497,10 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error('[POST /api/compatibility] 궁합 계산 실패:', error)
-    return NextResponse.json({ error: '궁합 계산 중 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json(
+      { error: '궁합 계산 중 오류가 발생했습니다.' },
+      { status: 500 }
+    )
   }
 
   // ===== 8. DB 저장 =====

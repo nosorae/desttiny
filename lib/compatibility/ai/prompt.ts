@@ -6,11 +6,20 @@
  *
  * 출력 형식: JSON { summary, sections: [{title, content, area}], finalSummary }
  */
-import type { PersonCompatibilityInput, RelationshipType, CompatibilityScore } from '../types'
+import type {
+  PersonCompatibilityInput,
+  RelationshipType,
+  CompatibilityScore,
+} from '../types'
 
 const RELATIONSHIP_KO: Record<RelationshipType, string> = {
-  lover: '연인', ex: '전연인', crush: '썸',
-  friend: '친구', colleague: '동료', family: '가족',
+  lover: '연인',
+  ex: '전연인',
+  crush: '썸',
+  friend: '친구',
+  colleague: '동료',
+  family: '가족',
+  idol: '아이돌',
 }
 
 const INTIMATE_TYPES: RelationshipType[] = ['lover', 'ex', 'crush']
@@ -27,22 +36,30 @@ export interface CompatibilityPromptInput {
   }
 }
 
-export function buildCompatibilityPrompt(data: CompatibilityPromptInput): string {
+export function buildCompatibilityPrompt(
+  data: CompatibilityPromptInput
+): string {
   const { person1, person2, relationshipType, totalScore, breakdown } = data
   const relKo = RELATIONSHIP_KO[relationshipType]
   const isIntimate = INTIMATE_TYPES.includes(relationshipType)
 
   const describePersonSaju = (p: PersonCompatibilityInput) =>
-    p.dayPillar ? `사주 일주 ${p.dayPillar.label}(${p.dayPillar.element})` : '사주 정보 없음'
+    p.dayPillar
+      ? `사주 일주 ${p.dayPillar.label}(${p.dayPillar.element})`
+      : '사주 정보 없음'
   const describePersonZodiac = (p: PersonCompatibilityInput) =>
     p.zodiacId ? `별자리 ${p.zodiacId}` : '별자리 정보 없음'
 
   // 계산 결과를 텍스트로 포맷 (details가 없으면 세부사항 섹션 생략)
-  const formatScore = (label: string, weight: string, s: CompatibilityScore): string => {
+  const formatScore = (
+    label: string,
+    weight: string,
+    s: CompatibilityScore
+  ): string => {
     const lines = [`${label} (${weight}): ${s.score}점`, `사유: ${s.reason}`]
     if (s.details.length > 0) {
       lines.push('세부사항:')
-      s.details.forEach(d => lines.push(`- ${d}`))
+      s.details.forEach((d) => lines.push(`- ${d}`))
     }
     return lines.join('\n')
   }

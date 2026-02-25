@@ -28,14 +28,15 @@ export type MbtiType =
   | 'ESTP'
   | 'ESFP'
 
-/** 관계 유형 */
+/** 관계 유형 (7개: 합집합 - 제품 스펙 + 디자인 스펙) */
 export type RelationshipType =
-  | 'lover'       // 연인
-  | 'ex'          // 전연인
-  | 'crush'       // 썸
-  | 'friend'      // 친구
-  | 'colleague'   // 동료
-  | 'family'      // 가족
+  | 'lover' // 연인
+  | 'ex' // 전연인
+  | 'crush' // 썸
+  | 'friend' // 친구
+  | 'colleague' // 동료
+  | 'family' // 가족
+  | 'idol' // 아이돌
 
 /** LLM이 생성하는 영역별 해설 섹션 */
 export interface CompatibilitySection {
@@ -46,11 +47,11 @@ export interface CompatibilitySection {
   /** 분석 영역 */
   area:
     | 'communication' // 소통
-    | 'emotion'       // 감정
-    | 'values'        // 가치관
-    | 'lifestyle'     // 생활습관
-    | 'conflict'      // 갈등 해결
-    | 'intimacy'      // 친밀도 (연인/썸/전연인만)
+    | 'emotion' // 감정
+    | 'values' // 가치관
+    | 'lifestyle' // 생활습관
+    | 'conflict' // 갈등 해결
+    | 'intimacy' // 친밀도 (연인/썸/전연인만)
 }
 
 /**
