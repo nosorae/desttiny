@@ -332,33 +332,35 @@ MVP 완성을 위한 권장 순서입니다. 화살표(→)는 순서 의존성,
 
 ---
 
-### 5단계: 결제 설정 `human-only + ai`
-
-- [#25](https://github.com/nosorae/desttiny/issues/25) PortOne 계정/채널 등록 (human: 계정 생성 → ai: 결제 코드)
-
-> 💡 4단계와 병렬 진행 가능 (온보딩과 독립적)
->
-> ⚠️ 실제 결제 활성화는 사업자 등록증 제출 필요 (테스트 모드로 먼저 개발)
-
-> 📋 **근거**: 결제는 수익의 핵심이지만 외부 서비스(PortOne) 설정이 필요하여 human 작업이 포함된다. 4단계(온보딩)와 독립적이므로 병렬 진행하여 대기 시간을 최소화할 수 있다.
-
----
-
-### 6단계: 핵심 궁합 플로우 `ai-only` `수익 핵심`
+### 5단계: 핵심 궁합 플로우 (결제 없이) `ai-only` `#18 검증`
 
 - [#23](https://github.com/nosorae/desttiny/issues/23) 관계 유형 선택 & 상대방 정보 입력
-  → [#22](https://github.com/nosorae/desttiny/issues/22) 티저 결과 화면 & 결제 CTA (무료 미리보기)
-  → [#26](https://github.com/nosorae/desttiny/issues/26) 일일 선착순 무료 로직 ← 결제 CTA와 함께 동작
-  → [#21](https://github.com/nosorae/desttiny/issues/21) 궁합 결과 리포트 전체 공개 (결제 완료 후)
+  → [#22](https://github.com/nosorae/desttiny/issues/22) 티저 결과 화면 (결제 CTA는 placeholder)
+  → [#21](https://github.com/nosorae/desttiny/issues/21) 궁합 결과 리포트 전체 공개 (결제 게이트 없이 우선 공개)
 
 > ⚠️ 선행 조건:
 > - 4단계 완료 (내 프로필이 있어야 궁합 요청 가능)
 > - 3단계 완료 (엔진이 있어야 점수 계산 가능)
-> - 5단계 완료 (결제 연동 필요)
 
-> 📋 **근거**: 서비스의 핵심 가치(궁합 분석)와 수익(결제)을 동시에 제공하는 메인 플로우. 앞선 모든 준비(프로필, 엔진, 결제)가 여기서 결합된다. 입력 → 티저 → 결제 유도 → 전체 공개 순서는 사용자 전환 퍼널(funnel) 설계에 따른 것이다.
+> 📋 **근거**: 결제 연동 전에 궁합 분석 핵심 플로우를 먼저 완성하여, #18 API(`POST /api/compatibility`)를 UI로 검증한다. 결제 없이 전체 결과를 공개하면 입력 → 분석 → 결과 확인 흐름을 빠르게 테스트할 수 있다. 결제 게이트와 CTA는 6단계에서 붙인다.
 
-> 🧪 **#18 궁합 API 수동 테스트 (UI)**: #23 완료 시점부터 UI로 테스트 가능. #23이 `POST /api/compatibility`를 호출하는 프론트엔드이므로 이때 처음으로 브라우저에서 궁합 분석 전체 플로우를 확인할 수 있다. 테스트 항목은 [이슈 #18 댓글의 STEP 0~9](https://github.com/nosorae/desttiny/issues/18#issuecomment-3955970090) 참고. 선행 조건: 2단계(#9 인증) + 4단계(#10, #11 온보딩/프로필) + 6단계 #23 완료.
+> 🧪 **#18 궁합 API 수동 테스트 (UI)**: #23 완료 시점부터 UI로 테스트 가능. #23이 `POST /api/compatibility`를 호출하는 프론트엔드이므로 이때 처음으로 브라우저에서 궁합 분석 전체 플로우를 확인할 수 있다. 테스트 항목은 [이슈 #18 댓글의 STEP 0~9](https://github.com/nosorae/desttiny/issues/18#issuecomment-3955970090) 참고. 선행 조건: 2단계(#9 인증) + 4단계(#10, #11 온보딩/프로필) + 5단계 #23 완료.
+
+---
+
+### 6단계: 결제 설정 & 결제 연동 `human-only + ai` `수익 핵심`
+
+- [#25](https://github.com/nosorae/desttiny/issues/25) PortOne 계정/채널 등록 (human: 계정 생성 → ai: 결제 코드)
+  → [#26](https://github.com/nosorae/desttiny/issues/26) 일일 선착순 무료 로직
+  → [#22](https://github.com/nosorae/desttiny/issues/22)에 실제 결제 CTA 연동
+  → [#21](https://github.com/nosorae/desttiny/issues/21)에 결제 게이트 추가 (미결제 시 티저만 노출)
+
+> ⚠️ 선행 조건:
+> - 5단계 완료 (궁합 플로우 UI가 있어야 결제를 붙일 수 있음)
+>
+> ⚠️ 실제 결제 활성화는 사업자 등록증 제출 필요 (테스트 모드로 먼저 개발)
+
+> 📋 **근거**: 5단계에서 궁합 플로우가 검증된 후 결제를 붙인다. 결제 없이 먼저 핵심 기능을 확인하면 디버깅이 쉽고, 결제 관련 이슈와 궁합 로직 이슈를 분리할 수 있다. #22(티저+CTA)와 #21(전체 공개 게이트)는 5단계에서 만든 UI에 결제 로직만 추가하는 형태.
 
 ---
 
@@ -366,7 +368,7 @@ MVP 완성을 위한 권장 순서입니다. 화살표(→)는 순서 의존성,
 
 - 병렬: [#31](https://github.com/nosorae/desttiny/issues/31) 프로필 탭 UI | [#28](https://github.com/nosorae/desttiny/issues/28) 결제/이력 탭 UI
 
-> ⚠️ 6단계 완료 후: 실제 데이터가 있어야 UI 개발 시 확인 가능
+> ⚠️ 6단계 완료 후: 실제 데이터(궁합 이력, 결제 내역)가 있어야 UI 개발 시 확인 가능
 
 > 📋 **근거**: 보조 탭(프로필, 결제/이력)은 핵심 플로우에서 생성된 실제 데이터(프로필 정보, 궁합 이력, 결제 내역)가 있어야 UI를 제대로 개발하고 검증할 수 있다. 두 탭은 서로 독립적이므로 병렬 진행 가능.
 
