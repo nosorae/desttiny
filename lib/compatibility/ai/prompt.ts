@@ -66,6 +66,29 @@ export function buildCompatibilityPrompt(data: CompatibilityPromptInput): string
     ? ',\n    { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "intimacy" }'
     : ''
 
+  // 연인계 관계에서만 29금 친밀도 점수 3종을 LLM이 생성
+  // SSOT 궁합 결과 템플릿 v1 기준: 텐션/리듬/경계선 대화
+  const intimacyScoresSection = isIntimate
+    ? `,
+  "intimacyScores": {
+    "tension": 0,
+    "rhythm": 0,
+    "boundary": 0,
+    "strength": "강점 한 줄",
+    "caution": "주의점 한 줄",
+    "advice": "권장 대화 한 줄"
+  }`
+    : ''
+
+  const intimacyScoresInstruction = isIntimate
+    ? `
+6. 29금 친밀도 점수도 함께 생성하세요:
+   - tension(텐션 합): 설렘, 긴장감, 끌림의 강도 (0-100)
+   - rhythm(리듬 합): 감정/신체 교감의 조화도 (0-100)
+   - boundary(경계선 대화 적합도): 민감한 주제를 다루는 소통 능력 (0-100)
+   - strength/caution/advice: 각각 한 줄(30자 이내)`
+    : ''
+
   return `당신은 사주·별자리·MBTI 통합 궁합 전문가입니다.
 다음 두 사람의 궁합을 분석하여 영역별로 상세한 해설을 작성해주세요.
 
@@ -83,7 +106,7 @@ ${breakdownSection}
 2. 각 영역 제목은 후킹형으로 작성하세요 (예: "둘이 싸우면 누가 이길까?")
 3. 본문은 구체적이고 실용적인 조언을 포함하세요 (공백 포함 450~550자, 약 500자)
 4. 마무리 정리는 전체 관계를 종합적으로 정리하세요 (공백 포함 450~550자, 약 500자)
-5. 한국어로 작성하세요
+5. 한국어로 작성하세요${intimacyScoresInstruction}
 
 [분석 영역]
 ${areas.join('\n')}
@@ -98,6 +121,6 @@ ${areas.join('\n')}
     { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "lifestyle" },
     { "title": "후킹 제목", "content": "상세 해설 (450~550자, 약 500자)", "area": "conflict" }${intimacySection}
   ],
-  "finalSummary": "마무리 정리 (공백 포함 450~550자, 약 500자)"
+  "finalSummary": "마무리 정리 (공백 포함 450~550자, 약 500자)"${intimacyScoresSection}
 }`
 }

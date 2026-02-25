@@ -112,6 +112,20 @@ export async function calculateCompatibility(
       throw new Error('LLM 응답이 예상 형식이 아님 (summary/sections/finalSummary 누락)')
     }
 
+    // intimacyScores는 연인계 관계에서만 존재 (optional)
+    // 형식이 잘못되면 무시하고 undefined로 처리 (해설 본문은 유지)
+    if (parsed.intimacyScores) {
+      const is = parsed.intimacyScores
+      if (
+        typeof is.tension !== 'number' ||
+        typeof is.rhythm !== 'number' ||
+        typeof is.boundary !== 'number'
+      ) {
+        console.warn('[calculateCompatibility] intimacyScores 형식 불일치, 무시')
+        delete parsed.intimacyScores
+      }
+    }
+
     analysis = parsed as CompatibilityAnalysis
   } catch (error) {
     // LLM 호출 실패 또는 JSON 파싱/형식 검증 실패 시 폴백
