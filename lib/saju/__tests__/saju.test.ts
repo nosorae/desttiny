@@ -1,7 +1,7 @@
 // lib/saju/__tests__/saju.test.ts
 import { describe, it, expect } from 'vitest'
 
-import { getSajuProfile } from '../index'
+import { getSajuProfile, parseDayPillar } from '../index'
 
 describe('getSajuProfile - 사주 4주 계산', () => {
   it('1990년 1월 1일 일주를 계산한다', async () => {
@@ -48,4 +48,28 @@ describe('만세력 앱 크로스체크', () => {
   it.todo('2000-06-15 일진 크로스체크')
   it.todo('1985-02-04 일진 크로스체크 (입춘 경계 테스트)')
   it.todo('2024-01-01 일진 크로스체크')
+})
+
+describe('parseDayPillar - DB 문자열 → Pillar 변환', () => {
+  it('갑자 → wood 오행 Pillar', () => {
+    const result = parseDayPillar('갑자')
+    expect(result.stem).toBe('갑')
+    expect(result.branch).toBe('자')
+    expect(result.element).toBe('wood')
+    expect(result.label).toBe('갑자')
+  })
+
+  it('병오 → fire 오행 Pillar', () => {
+    const result = parseDayPillar('병오')
+    expect(result.element).toBe('fire')
+  })
+
+  it('무진 → earth 오행 Pillar', () => {
+    const result = parseDayPillar('무진')
+    expect(result.element).toBe('earth')
+  })
+
+  it('알 수 없는 문자열은 Error를 던진다', () => {
+    expect(() => parseDayPillar('ab')).toThrow('알 수 없는 한자 간지')
+  })
 })

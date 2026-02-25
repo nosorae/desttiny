@@ -20,6 +20,7 @@ import {
   HANJA_STEM_TO_KOREAN,
   HANJA_BRANCH_TO_KOREAN,
   STEM_TO_ELEMENT,
+  BRANCH_TO_ELEMENT,
 } from './types'
 
 /** 어댑터 초기화 (한 번만 실행) */
@@ -57,6 +58,38 @@ function toPillar(hanjaGanzhi: string): Pillar {
     branch,
     label: `${stem}${branch}`,
     element: STEM_TO_ELEMENT[stem],
+  }
+}
+
+/**
+ * DB에 저장된 일주 문자열을 Pillar 객체로 파싱
+ *
+ * profiles.day_pillar는 "갑자", "을축" 등 2글자 한글 문자열로 저장됨
+ * toPillar()는 한자(甲子) → 한글 변환용이므로 이 함수는 한글을 직접 파싱.
+ * STEM_TO_ELEMENT/BRANCH_TO_ELEMENT 키 존재 여부로 유효성 검사.
+ *
+ * @param dayPillarStr - DB에 저장된 일주 문자열 (예: "갑자")
+ * @throws 알 수 없는 천간/지지일 경우 Error
+ */
+export function parseDayPillar(dayPillarStr: string): Pillar {
+  const stemChar = dayPillarStr[0]
+  const branchChar = dayPillarStr[1]
+
+  // STEM_TO_ELEMENT에 키로 존재하면 유효한 천간, 없으면 에러
+  const element = STEM_TO_ELEMENT[stemChar as keyof typeof STEM_TO_ELEMENT]
+  const branchElement = BRANCH_TO_ELEMENT[branchChar as keyof typeof BRANCH_TO_ELEMENT]
+
+  if (!element || !branchElement) {
+    throw new Error(
+      `알 수 없는 한자 간지: "${dayPillarStr}" (천간=${stemChar}, 지지=${branchChar})`
+    )
+  }
+
+  return {
+    stem: stemChar as import('./types').HeavenlyStem,
+    branch: branchChar as import('./types').EarthlyBranch,
+    label: `${stemChar}${branchChar}`,
+    element,
   }
 }
 
