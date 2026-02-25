@@ -31,7 +31,7 @@ export default function TeaserResult({
   onViewFull,
   isLoading,
 }: TeaserResultProps) {
-  const { totalScore, breakdown } = scores
+  const { totalScore } = scores
 
   return (
     <div className="space-y-6">
@@ -47,35 +47,34 @@ export default function TeaserResult({
         </p>
       </div>
 
-      {/* 3체계 점수 바 */}
+      {/* 3체계 점수 바 - 블러 처리 (세부 점수는 전체 리포트에서 공개) */}
       <div
-        className="space-y-3 animate-fade-slide-up"
+        className="relative rounded-xl bg-destiny-surface border border-destiny-border p-5 overflow-hidden animate-fade-slide-up"
         style={{ animationDelay: '200ms' }}
       >
-        {[
-          { label: '사주 궁합', score: breakdown.saju.score, weight: '40%' },
-          {
-            label: '별자리 궁합',
-            score: breakdown.zodiac.score,
-            weight: '30%',
-          },
-          { label: 'MBTI 궁합', score: breakdown.mbti.score, weight: '30%' },
-        ].map(({ label, score }) => (
-          <div key={label} className="flex items-center gap-3">
-            <span className="text-sm text-destiny-text-muted w-24 shrink-0">
-              {label}
-            </span>
-            <div className="flex-1 h-2 rounded-full bg-destiny-surface-2 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-destiny-primary to-destiny-primary-light transition-all duration-1000 ease-out"
-                style={{ width: `${score}%` }}
-              />
+        <div className="blur-sm select-none space-y-3" aria-hidden="true">
+          {['사주 궁합', '별자리 궁합', 'MBTI 궁합'].map((label) => (
+            <div key={label} className="flex items-center gap-3">
+              <span className="text-sm text-destiny-text-muted w-24 shrink-0">
+                {label}
+              </span>
+              <div className="flex-1 h-2 rounded-full bg-destiny-surface-2 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-destiny-primary to-destiny-primary-light"
+                  style={{ width: '65%' }}
+                />
+              </div>
+              <span className="text-sm font-bold text-destiny-text w-10 text-right shrink-0">
+                ??
+              </span>
             </div>
-            <span className="text-sm font-bold text-destiny-text w-10 text-right shrink-0">
-              {score}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center bg-destiny-surface/60">
+          <span className="text-sm text-destiny-text-muted">
+            🔒 체계별 점수는 전체 리포트에서 공개
+          </span>
+        </div>
       </div>
 
       {/* 블러 처리된 상세 해설 영역 (유료 잠금 표현) */}
