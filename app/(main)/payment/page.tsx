@@ -13,7 +13,26 @@
 //   → 결제 내역 리스트 렌더링 (Android RecyclerView의 .map() 버전)
 // TODO(#25): PortOne 결제 연동
 // TODO(#28): 결제/이력 탭 UI 구현
-export default function PaymentPage() {
+import { redirect } from 'next/navigation'
+
+import { createClient } from '@/lib/supabase/server'
+
+export default async function PaymentPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  // 프로필 미완성 시 온보딩으로 리다이렉트
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) redirect('/onboarding')
+
   return (
     <main className="px-6 py-8">
       <h1 className="text-xl font-bold text-destiny-text">결제 이력</h1>

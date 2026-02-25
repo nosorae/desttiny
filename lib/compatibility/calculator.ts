@@ -1,0 +1,217 @@
+/**
+ * 3체계 통합 궁합 계산기
+ *
+ * 사주(40%) + 별자리(30%) + MBTI(30%) 가중 합산으로 통합 점수 계산.
+ * LLMProvider를 주입받아 영역별 한국어 해설 생성.
+ *
+ * LLMProvider를 주입받는 이유:
+ *   - 테스트 시 mock provider로 교체 → 실제 API 호출 없이 빠른 테스트
+ *   - API route에서는 createLLMProvider()로 생성한 provider 주입
+ *   - 미래에 다른 LLM으로 교체 시 provider만 바꾸면 됨
+ *
+ * 3체계 점수를 독립적으로 계산하므로 Promise.all로 병렬 실행
+ * 참고: https://vercel.com/blog/introducing-react-best-practices
+ */
+import { buildCompatibilityPrompt } from './ai'
+import { calculateMbtiCompatibility } from './mbti/calculator'
+import { calculateSajuCompatibility } from './saju/calculator'
+import type {
+  PersonCompatibilityInput,
+  RelationshipType,
+  CompatibilityResult,
+  CompatibilityScore,
+  CompatibilityAnalysis,
+} from './types'
+import { calculateZodiacCompatibility } from './zodiac/calculator'
+import type { LLMProvider } from '../llm/types'
+
+const DEFAULT_SAJU_SCORE: CompatibilityScore = {
+  score: 50,
+  reason: '사주 정보 없음 - 기본 점수 적용',
+  details: [],
+}
+
+const DEFAULT_ZODIAC_SCORE: CompatibilityScore = {
+  score: 50,
+  reason: '별자리 정보 없음 - 기본 점수 적용',
+  details: [],
+}
+
+/** 점수 계산 결과 (LLM 해설 없음) */
+export interface CompatibilityScoreResult {
+  totalScore: number
+  breakdown: {
+    saju: CompatibilityScore
+    zodiac: CompatibilityScore
+    mbti: CompatibilityScore
+  }
+}
+
+/**
+ * 3체계 점수만 계산합니다 (LLM 호출 없음, 동기적).
+ * Server Action에서 티저 점수 미리보기에 사용.
+ */
+export function calculateCompatibilityScore(
+  person1: PersonCompatibilityInput,
+  person2: PersonCompatibilityInput
+): CompatibilityScoreResult {
+  const sajuScore =
+    person1.dayPillar && person2.dayPillar
+      ? calculateSajuCompatibility(person1.dayPillar, person2.dayPillar)
+      : DEFAULT_SAJU_SCORE
+  const zodiacScore =
+    person1.zodiacId && person2.zodiacId
+      ? calculateZodiacCompatibility(person1.zodiacId, person2.zodiacId)
+      : DEFAULT_ZODIAC_SCORE
+  const mbtiScore = calculateMbtiCompatibility(person1.mbti, person2.mbti)
+
+  const totalScore = Math.round(
+    sajuScore.score * 0.4 + zodiacScore.score * 0.3 + mbtiScore.score * 0.3
+  )
+
+  return {
+    totalScore,
+    breakdown: { saju: sajuScore, zodiac: zodiacScore, mbti: mbtiScore },
+  }
+}
+
+/** LLM JSON 파싱 실패 시 점수 기반 기본 해설 */
+function getFallbackAnalysis(totalScore: number): CompatibilityAnalysis {
+  const level =
+    totalScore >= 80 ? '높은' : totalScore >= 60 ? '양호한' : '도전적인'
+  return {
+    summary: `두 분의 궁합 점수는 ${totalScore}점으로 ${level} 궁합입니다`,
+    sections: [
+      {
+        title: '두 사람의 소통 방식',
+        content:
+          '서로의 특성을 존중하는 대화가 관계를 더욱 풍요롭게 만들 수 있습니다.',
+        area: 'communication',
+      },
+      {
+        title: '감정 표현의 온도차',
+        content:
+          '감정 표현 방식의 차이를 인정하고 배려하는 것이 깊은 신뢰를 쌓는 첫걸음입니다.',
+        area: 'emotion',
+      },
+      {
+        title: '가치관, 얼마나 맞을까?',
+        content:
+          '삶에서 중요하게 여기는 것들이 비슷할수록 장기적인 관계가 편안해집니다.',
+        area: 'values',
+      },
+      {
+        title: '함께 하는 일상',
+        content:
+          '일상 속 작은 습관과 취향이 맞을수록 함께하는 시간이 즐거워집니다.',
+        area: 'lifestyle',
+      },
+      {
+        title: '갈등이 생기면?',
+        content:
+          '모든 관계에서 갈등은 자연스러운 일입니다. 상대방의 입장에서 생각해보는 것이 현명한 시작입니다.',
+        area: 'conflict',
+      },
+      {
+        title: '함께 성장할 수 있을까?',
+        content:
+          '서로의 꿈과 목표를 응원하고 함께 발전해 나갈 때 관계는 더 깊어집니다.',
+        area: 'growth',
+      },
+      {
+        title: '믿음과 안정감',
+        content:
+          '서로를 신뢰하고 의지할 수 있을 때 관계의 기반이 탄탄해집니다.',
+        area: 'trust',
+      },
+      {
+        title: '함께라서 즐거운 순간',
+        content: '비슷한 유머 코드와 취미가 있으면 일상이 더 특별해집니다.',
+        area: 'fun',
+      },
+    ],
+    finalSummary: `${totalScore}점의 궁합, 서로를 이해하고 노력한다면 더 좋은 관계로 발전할 수 있습니다.`,
+  }
+}
+
+/**
+ * 3체계 통합 궁합을 계산합니다.
+ *
+ * @param person1 - 사람1 입력 데이터
+ * @param person2 - 사람2 입력 데이터
+ * @param relationshipType - 관계 유형
+ * @param provider - LLM provider (테스트 시 mock 주입 가능)
+ */
+export async function calculateCompatibility(
+  person1: PersonCompatibilityInput,
+  person2: PersonCompatibilityInput,
+  relationshipType: RelationshipType,
+  provider: LLMProvider
+): Promise<CompatibilityResult> {
+  // 1. 점수 계산 (추출된 함수 재사용)
+  const { totalScore, breakdown } = calculateCompatibilityScore(
+    person1,
+    person2
+  )
+  const { saju: sajuScore, zodiac: zodiacScore, mbti: mbtiScore } = breakdown
+
+  // 2. LLM 해설 생성 (실패 시 폴백)
+  const prompt = buildCompatibilityPrompt({
+    person1,
+    person2,
+    relationshipType,
+    totalScore,
+    breakdown,
+  })
+  let analysis: CompatibilityAnalysis
+  try {
+    const rawText = await provider.generateText(prompt)
+
+    // Claude는 JSON 요청 시에도 ```json ... ``` 코드 펜스로 감싸는 경우가 있어 제거
+    const stripped = rawText
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim()
+
+    const parsed = JSON.parse(stripped)
+
+    // 형식 검증: 필수 필드 타입 체크 (as 캐스팅만으로는 런타임 보장 없음)
+    if (
+      typeof parsed.summary !== 'string' ||
+      !Array.isArray(parsed.sections) ||
+      typeof parsed.finalSummary !== 'string'
+    ) {
+      throw new Error(
+        'LLM 응답이 예상 형식이 아님 (summary/sections/finalSummary 누락)'
+      )
+    }
+
+    // intimacyScores는 연인계 관계에서만 존재 (optional)
+    // 형식이 잘못되면 무시하고 undefined로 처리 (해설 본문은 유지)
+    if (parsed.intimacyScores) {
+      const is = parsed.intimacyScores
+      if (
+        typeof is.tension !== 'number' ||
+        typeof is.rhythm !== 'number' ||
+        typeof is.boundary !== 'number'
+      ) {
+        console.warn(
+          '[calculateCompatibility] intimacyScores 형식 불일치, 무시'
+        )
+        delete parsed.intimacyScores
+      }
+    }
+
+    analysis = parsed as CompatibilityAnalysis
+  } catch (error) {
+    // LLM 호출 실패 또는 JSON 파싱/형식 검증 실패 시 폴백
+    console.error('[calculateCompatibility] LLM 실패, 폴백 사용:', error)
+    analysis = getFallbackAnalysis(totalScore)
+  }
+
+  return {
+    totalScore,
+    breakdown: { saju: sajuScore, zodiac: zodiacScore, mbti: mbtiScore },
+    analysis,
+  }
+}
